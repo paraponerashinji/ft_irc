@@ -16,6 +16,14 @@ class Channel {
     vector<Client>
 }
 
+enum 
+{
+    NICKNAME,
+    USERNAME,
+}
+Server::create_client(std::string)
+
+Server::create_client(Client, Arg.USERNAME, std::string)
 receive_message(Client, std::string);
 PRIVMSG Channel
 INVITE
