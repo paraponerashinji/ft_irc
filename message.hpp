@@ -1,72 +1,74 @@
 class Message
 {
-    private:
-        std::string message;
-        vector<std::string> message_cut;
-        Client      user;
+    protected:
+        Server      *_server;
+        Client      _user;
+        std::string _text;
     public:
-        Message(Client, std::string);
+        Message(Server *server, Client, std::string);
         virtual ~Message();
-        void    message_error();
-        Client  get_sender();
-        std::string get_message();
-        vector<std::string> split_message(std::string);
+        virtual void exec(std::string) = 0;
 };
 
-class Private_message: public Message
+class Pass: public Message
 {
-    private:
-        Client  target;
-        std::string text;
     public:
-        Private_message(Client, std::string);
-        ~Private_message();
-        Client  get_target();
-        std::string get_text();
-}
-
-class Channel_message: public Message
-{
-    private:
-        Channel channel;
-    public:
-        Channel_message(Client, Channel, std::string);
-        virtual ~Channel_message();
-        Channel get_channel();
+        void exec(std::string);
 };
 
-class Target_command: public Channel_message
+class Nick: public Message
 {
-    private:
-        Client  target;
-        std::string command;
-        std::string args;
     public:
-        Target_command(Client, std::string);
-        ~Target_command();
-        Client  get_target();
-        std::string get_command();
-        std::string get_args();
+        void exec(std::string);
 };
 
-class Mode_command: public Channel_message
+class User: public Message
 {
-    private:
-        std::string flag;
-        std::string args;
     public:
-        Mode_command(Client, Channel, std::string);
-        ~Mode_command();
-        std::string get_flag();
-        std::string get_args();
+        void exec(std::string);
 };
 
-class Topic_command: public Channel_message
+class Privmsg: public Message
+{
+    public:
+        void exec(std::string);
+};
+
+class Quit: public Message
+{
+    public:
+        void exec(std::string);
+};
+
+class Join: public Message
 {
     private:
-        std::string args;
+        _password;
     public:
-        Topic_command(Client, Channel, std::string);
-        ~Topic_command();
-        std::string get_args();
+        std::string getPassword();
+        void exec(std::string);
+};
+
+class Topic: public Message
+{
+    public:
+        void exec(std::string);
+};
+
+class Kick: public Message
+{
+    public:
+        void exec(std::string);
+};
+
+class Invite: public Message
+{
+    public:
+        void exec(std::string);
+};
+
+class Mode: public Message
+{
+    public:
+        void exec(std::string);
 };

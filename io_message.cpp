@@ -14,8 +14,9 @@ Server::receive_message(Client sender, std::string text)
         "TOPIC",
         "MODE"
     }
-    Message vanilla(sender, text);
-    std::string command = vanilla.split_message()[0];
+    std::stringstream ss(line)
+    std::string command;
+    ss >> command;
     int i = 0;
     while (i < 9)
     {
@@ -25,37 +26,34 @@ Server::receive_message(Client sender, std::string text)
     switch (i)
 	{
 	case 0:
-		create_client(vanilla.get_message());
+        Pass(*this, sender, text);
 		break;
 	case 1:
-        if (vanilla.split_message()[1][0] == "&" || vanilla.split_message()[1][0] == "#")
-            Channel_message sendchannel(vanilla);
-        else
-            Private_message sendpv(vanilla);
+        Privmsg(*this, sender, text);
 		break;
 	case 2:
-        vanilla.join();
+        Join(*this, sender, text);
 		break;
 	case 3:
-        create_client(NICK, vanilla.get_message());
+        Nick(*this, sender, text);
 		break;
     case 4:
-        create_client(USER, vanilla.get_message());
+        User(*this, sender, text);
 		break;
     case 5:
-        Target_command kickcommand(vanilla);
+        Kick(*this, sender, text);
 		break;
     case 6:
-        Target_command invitecommand(vanilla);
+        Invite(*this, sender, text);
 		break;
     case 7:
-        Topic_command topic(vanilla);
+        Topic(*this, sender, text);
 		break;
     case 8:
-        Mode_command mode(vanilla);
+        Mode(*this, sender, text);
 		break;
     case 9:
-        vanilla.message_error();
+        ircERROR(*this, sender, 421);
 		break;
 	}
 }
