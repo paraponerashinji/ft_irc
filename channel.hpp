@@ -1,6 +1,7 @@
 class Channel
 {
     private:
+        Server         *_server;
         std::string    _name;
         vector<Client> _Clients;
         vector<Client> _Admins;
@@ -13,8 +14,8 @@ class Channel
         bool           _topic_admin_only;
         bool           _room_password_active;
     public:
-        Channel(std::string, Client);
-        Channel(std::string, std::string, Client);
+        Channel(Server, std::string, Client);
+        Channel(Server, std::string, std::string, Client);
         ~Channel();
         std::string hash_password(const std::string&);
         void    join(Client);

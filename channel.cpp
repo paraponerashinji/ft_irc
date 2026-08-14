@@ -1,6 +1,6 @@
 #include "channel.hpp"
 
-Channel::Channel(std::string name, Client client): _name(name)
+Channel::Channel(Server *server, std::string name, Client client): _name(name), _server(server)
 {
     _Admins.push_back(client);
     _Clients.push_back(client);
@@ -11,7 +11,7 @@ Channel::Channel(std::string name, Client client): _name(name)
     _room_password_active = false;
 };
 
-Channel::Channel(std::string name, std::string password, Client client): _name(name)
+Channel::Channel(Server *server, std::string name, std::string password, Client client): _name(name), _server(server)
 {
     _Admins.push_back(client);
     _Clients.push_back(client);
@@ -103,7 +103,7 @@ void    editInvite_only();
 
 void    editTopic_admin_only()
 {
-    _topic_admin_only = !=_topic_admin_only;
+    _topic_admin_only = !_topic_admin_only;
 };
 
 void    set_password(std::string password)
@@ -118,4 +118,17 @@ void    add_Admin(Client user)
     if (it == _Clients.end())
         throw MemberNotFoundException();
     _Admins.push_back(user);
+};
+
+void    editUser_limit()
+{
+    _user_limit = !_user_limit;
+};
+
+void    broadcast(std::string message);
+{
+    for (std::vector<Client>::iterator it = _Clients.begin(); it ! _Clients.end(); ++it)
+    {
+        _server::send_message(*it, message);
+    }
 };
