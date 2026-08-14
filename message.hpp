@@ -5,7 +5,7 @@ class Message
         Client      _user;
         std::string _text;
     public:
-        Message(Server *server, Client, std::string);
+        Message(Server*, Client, std::string);
         virtual ~Message();
         virtual void exec(std::string) = 0;
 };
@@ -14,6 +14,10 @@ class Pass: public Message
 {
     public:
         void exec(std::string);
+    class   ClientExistAlreadyException: public std::exception
+    {
+        int errorCode() const;
+    };
 };
 
 class Nick: public Message
@@ -26,12 +30,25 @@ class User: public Message
 {
     public:
         void exec(std::string);
+    class   UserNameAlreadyTakenException: public std::exception
+    {
+        int errorCode() const;
+    };
+    class   UserNameAlreadySetException: public std::exception
+    {
+        int errorCode() const;
+    };
 };
 
 class Privmsg: public Message
 {
     public:
-        void exec(std::string);
+        std::vector<std::string> split(std::string);
+        void         exec(std::string);
+        class   InvalidTargetInputException: public std::exception
+        {
+            int errorCode() const;
+        };
 };
 
 class Quit: public Message

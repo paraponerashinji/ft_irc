@@ -125,10 +125,39 @@ void    editUser_limit()
     _user_limit = !_user_limit;
 };
 
-void    broadcast(std::string message);
+void    broadcast(Client user, std::string message);
 {
+    std::vector<Client>::iterator it;
+    it = std::find(_Clients.begin(), _Clients.end(), user)
+    if (it == _Clients.end())
+        throw MemberNotFoundException();
     for (std::vector<Client>::iterator it = _Clients.begin(); it ! _Clients.end(); ++it)
     {
         _server::send_message(*it, message);
     }
+};
+
+int Server::ChannelFullException() const
+{
+    return (471);
+};
+
+int Server::InvalidPasswordException() const
+{
+    return (475);
+};
+
+int Server::MissingInviteException() const
+{
+    return (473);
+};
+
+int Server::MissingAuthorizationException() const
+{
+    return (481);
+};
+
+int Server::MemberNotFoundException() const
+{
+    return (401);
 };

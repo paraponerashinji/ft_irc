@@ -30,22 +30,22 @@ class Channel
         void    broadcast(std::string);
         class   ChannelFullException: public std::exception
         {
-            const char* what() const throw();
+            int errorCode() const;
         };
         class   InvalidPasswordException: public std::exception
         {
-            const char* what() const throw();
+            int errorCode() const;();
         };
         class   MissingInviteException: public std::exception
         {
-            const char* what() const throw();
+            int errorCode() const;
         };
         class   MissingAuthorizationException: public std::exception
         {
-            const char* what() const throw();
+            int errorCode() const;
         };
         class   MemberNotFoundException: public std::exception
         {
-            const char* what() const throw();
+            int errorCode() const;
         };
 }
