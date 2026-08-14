@@ -39,7 +39,7 @@ std::string Channel::hash_password(const std::string& password)
     return (ss.string());
 };
 
-void    join(Client user)
+void    Channel::join(Client user)
 {
     std::vector<Client>::iterator it;
     it = std::find(_Invited.begin(), _Invited.end(), user);
@@ -55,7 +55,7 @@ void    join(Client user)
     _user_size++;
 };
 
-void    join(Client user, Join password)
+void    Channel::join(Client user, Join password)
 {
     if (_user_limit != 0 && _user_limit >= _user_size)
         throw ChannelFullException();
@@ -76,7 +76,7 @@ void    join(Client user, Join password)
     _user_size++;
 };
 
-void    quit(Client user)
+void    Channel::quit(Client user)
 {
     std::vector<Client>::iterator it;
     it = std::find(_Admins.begin(), _Admins.end(), user)
@@ -91,27 +91,27 @@ void    quit(Client user)
         ~Channel();
 };
 
-void    editTopic(std::string topic)
+void    Channel::editTopic(std::string topic)
 {
     _topic = topic;
 };
 
-void    editInvite_only();
+void    Channel::editInvite_only();
 {
     _invite_only = !_invite_only;
 };
 
-void    editTopic_admin_only()
+void    Channel::editTopic_admin_only()
 {
     _topic_admin_only = !_topic_admin_only;
 };
 
-void    set_password(std::string password)
+void    Channel::set_password(std::string password)
 {
     _room_password = hash_password(password);
 };
 
-void    add_Admin(Client user)
+void    Channel::add_Admin(Client user)
 {
     std::vector<Client>::iterator it;
     it = std::find(_Clients.begin(), _Clients.end(), user)
@@ -120,12 +120,12 @@ void    add_Admin(Client user)
     _Admins.push_back(user);
 };
 
-void    editUser_limit()
+void    Channel::editUser_limit()
 {
     _user_limit = !_user_limit;
 };
 
-void    broadcast(Client user, std::string message);
+void    Channel::broadcast(Client user, std::string message);
 {
     std::vector<Client>::iterator it;
     it = std::find(_Clients.begin(), _Clients.end(), user)
@@ -137,27 +137,27 @@ void    broadcast(Client user, std::string message);
     }
 };
 
-int Server::ChannelFullException() const
+int Channel::ChannelFullException() const
 {
     return (471);
 };
 
-int Server::InvalidPasswordException() const
+int Channel::InvalidPasswordException() const
 {
     return (475);
 };
 
-int Server::MissingInviteException() const
+int Channel::MissingInviteException() const
 {
     return (473);
 };
 
-int Server::MissingAuthorizationException() const
+int Channel::MissingAuthorizationException() const
 {
     return (481);
 };
 
-int Server::MemberNotFoundException() const
+int Channel::MemberNotFoundException() const
 {
     return (401);
 };
