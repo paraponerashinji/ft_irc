@@ -6,7 +6,7 @@
 /*   By: aharder <aharder@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 12:26:19 by aharder           #+#    #+#             */
-/*   Updated: 2026/08/14 17:43:06 by aharder          ###   ########.fr       */
+/*   Updated: 2026/08/14 17:59:37 by aharder          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,7 +109,7 @@ void Privmsg::exec(std::string msg)
 
 void Quit::exec(std::string msg)
 {
-    // TODO
+    
 };
 
 void Join::exec(std::string msg)
@@ -117,14 +117,12 @@ void Join::exec(std::string msg)
     std::string raw_msg = msg.substr(msg.find(' '));
     std::string channel = raw_msg.substr(raw_msg.begin(), raw_msg.find(' '));
     raw_msg = raw_msg.substr(raw_msg.find(' ') + 1);
-    std::string target = raw_msg.substr(raw_msg.begin(), raw_msg.find(' '));
-    raw_msg = raw_msg.substr(raw_msg.find(' ') + 1);
     try
     {
         if (raw_msg.empty())
-            _server.getChannel(channel).join(_server.getClients(target));
+            _server.getChannel(channel).join(_server.getClients(_user));
         else
-            _server.getChannel(channel).join(_server.getClients(target), raw_msg);
+            _server.getChannel(channel).join(_server.getClients(_user), raw_msg);
     }
     catch (std::exception &e)
     {
@@ -134,7 +132,20 @@ void Join::exec(std::string msg)
 
 void Topic::exec(std::string msg)
 {
-    //  TODO
+    std::string raw_msg = msg.substr(msg.find(' '));
+    std::string channel = raw_msg.substr(raw_msg.begin(), raw_msg.find(' '));
+    raw_msg = raw_msg.substr(raw_msg.find(' ') + 1);
+    try
+    {
+        _server.getChannel(channel).getClients(_user);
+        if (_server.getChannel(channel).isTopicAdmin())
+            _server.getChannel(channel).getAdmins(_user);
+        _server.getChannel(channel).editTopic(raw_msg);
+    }
+    catch (std::exception &e)
+    {
+        _server.ircERROR(e.errorCode());
+    }
 };
 
 void Kick::exec(std::string msg)
