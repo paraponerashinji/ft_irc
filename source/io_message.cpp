@@ -1,4 +1,7 @@
-#include "message.hpp"
+#ifndef IO_MSG
+#define IO_MSG
+#include "../include/message.hpp"
+#include "../include/server.hpp"
 
 Server::receive_message(Client sender, std::string text)
 {
@@ -56,4 +59,5 @@ Server::receive_message(Client sender, std::string text)
         ircERROR(*this, sender, 421);
 		break;
 	}
-}
+};
+#endif

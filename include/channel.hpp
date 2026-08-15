@@ -29,8 +29,14 @@ class Channel
         void    editTopic_admin_only();
         void    set_password(std::string);
         void    add_Admin(Client);
+        void    add_Invited(Client);
         void    editUser_limit();
         void    broadcast(std::string);
+        vector<Client>  getClients();
+        vector<Client>  getAdmins();
+        Client  getAdmins(Client);
+        Client  getClients(Client);
+        bool    isTopicAdmin();
         class   ChannelFullException: public std::exception
         {
             int errorCode() const;

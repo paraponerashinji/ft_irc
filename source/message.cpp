@@ -90,7 +90,7 @@ void Privmsg::exec(std::string msg)
             }
             catch (std::exception &e)
             {
-                _server.ircERROR(e.errorCode());
+                _server.ircERROR(_user, e.errorCode());
             }
         }
         else
@@ -101,7 +101,7 @@ void Privmsg::exec(std::string msg)
             }
             catch (std::exception &e)
             {
-                _server.ircERROR(e.errorCode());
+                _server.ircERROR(_user, e.errorCode());
             }
         }
     }
@@ -126,7 +126,7 @@ void Join::exec(std::string msg)
     }
     catch (std::exception &e)
     {
-        _server.ircERROR(e.errorCode());
+        _server.ircERROR(_user, e.errorCode());
     }
 };
 
@@ -144,7 +144,7 @@ void Topic::exec(std::string msg)
     }
     catch (std::exception &e)
     {
-        _server.ircERROR(e.errorCode());
+        _server.ircERROR(_user, e.errorCode());
     }
 };
 
@@ -162,7 +162,7 @@ void Kick::exec(std::string msg)
     }
     catch (std::exception &e)
     {
-        _server.ircERROR(e.errorCode());
+        _server.ircERROR(_user, e.errorCode());
     }
 };
 
@@ -179,7 +179,7 @@ void Invite::exec(std::string msg)
     }
     catch (std::exception &e)
     {
-        _server.ircERROR(e.errorCode());
+        _server.ircERROR(_user, e.errorCode());
     }
 };
 

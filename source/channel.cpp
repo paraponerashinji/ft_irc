@@ -137,6 +137,51 @@ void    Channel::broadcast(Client user, std::string message);
     }
 };
 
+void    Channel::add_Invited(Client user)
+{
+    std::vector<Client>::iterator it;
+    it = std::find(_Clients.begin(), _Clients.end(), user);
+    if (it != _Clients.end())
+        throw MemberAlreadyHereException();
+    it = std::find(_Invited.begin(), _Invited.end(), user);
+    if (it != _Invited.end())
+        throw UserAlreadyInvitedException();
+    _Invited.push_back(user);
+};
+
+vector<Client> Channel::getClients()
+{
+    return _Clients;
+};
+
+vector<Client> Channel::getAdmins()
+{
+    return _Admins;
+};
+
+Client  Channel::getClients(Client user)
+{
+    std::vector<Client>::iterator it;
+    it = std::find(_Clients.begin(), _Clients.end(), user);
+    if (it == _Clients.end())
+        throw MemberNotFoundException();
+    return (user);
+};
+
+Client  Channel::getAdmins(Client user)
+{
+    std::vector<Client>::iterator it;
+    it = std::find(_Admins.begin(), _Admins.end(), user)
+    if (it == _Admins.end())
+        throw UserIsNotAdminException();
+    return (user);
+};
+
+bool    Channel::isTopicAdmin()
+{
+    return _topic_admin_only;
+};
+
 int Channel::ChannelFullException() const
 {
     return (471);
