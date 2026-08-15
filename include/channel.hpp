@@ -1,3 +1,6 @@
+#include "server.hpp"
+#include "message.hpp"
+
 class Channel
 {
     private:
@@ -48,4 +51,4 @@ class Channel
         {
             int errorCode() const;
         };
-}
+};
