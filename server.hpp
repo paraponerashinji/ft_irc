@@ -1,3 +1,6 @@
+#ifndef SERVER_HPP
+#define SERVER_HPP
+
 /*Class   Server {
     private:
     vector<Client> Clients
@@ -50,4 +53,41 @@ send_message(Client, std::string)*/
 #include <map>
 #include <algorithm>
 
+class   Server {
+
+    private:
+
+    std::vector<Client>     _clients;
+    std::vector<Channel>    _channels;
+    std::string             _password;
+    int                     _serverFd;
+
+    public:
+
+    Server();
+    Server(std::string password, int fd);
+    ~Server();
+
+    int     getServerFd() const;
+
+    Client  getClient(int fd);
+    Client  getClient(std::string nickname);
+
+    Channel getChannel(std::string name);
+    std::vector<Channel>    getChannels() const;
+
+    std::string             getPassword() const;
+
+    void    addClient(Client c);
+    void    removeClient(int fd);
+
+    void    createChannel(std::string name, Client creator);
+
+    void    sendMessage(Client c, std::string message);
+    void    receiveMessage(Client c, std::string message);
+    
+};
+
 void    petit_test(int port);
+
+#endif
