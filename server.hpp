@@ -33,6 +33,7 @@ INVITE
 
 send_message(Client, std::string)*/
 
+#include <cctype>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -83,8 +84,8 @@ class   Server {
 
     void    createChannel(std::string name, Client creator);
 
-    void    sendMessage(Client c, std::string message);
-    void    receiveMessage(Client c, std::string message);
+    void    sendMessage(Client &c, std::string message);
+    void    receiveMessage(Client &c, std::string message);
     
 };
 

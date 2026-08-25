@@ -10,6 +10,8 @@ int main(int ac, char **av) {
     if (server_fd < 0)
         return 1;
 
+    Server server(std::string(av[2]), server_fd);
+
     std::vector<struct pollfd> fds;
     struct pollfd server_pollfd;
     server_pollfd.fd = server_fd;
@@ -50,6 +52,9 @@ int main(int ac, char **av) {
                 continue;
             }
 
+            Client new_client(client_fd);
+            server.addClient(new_client);
+
             struct pollfd client_pollfd;
             client_pollfd.fd = client_fd;
             client_pollfd.events = POLLIN;
@@ -71,20 +76,26 @@ int main(int ac, char **av) {
                 {
                     std::cout << "Client deconnecte, fd = " << fds[i].fd << std::endl;
                     close(fds[i].fd);
+                    server.removeClient(fds[i].fd);
                     fds.erase(fds.begin() + i);
                     --i;
                     continue;
                 }
 
-                std::cout << "Message recu : " << buffer << std::endl;
+                std::string message(buffer, n);
+                Client client = server.getClient(fds[i].fd);
+                if (client.getFd() == -1)
+                {
+                    Client new_client(fds[i].fd);
+                    server.addClient(new_client);
+                    client = server.getClient(fds[i].fd);
+                }
 
-                std::string response = "PING : server\r\n";
-                send(fds[i].fd, response.c_str(), response.size(), 0); // repond immediatement au client pour test
-
+                server.receiveMessage(client, message);
             }
         }
     }
 
     close(server_fd);
-    return;
+    return 0;
 }

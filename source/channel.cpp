@@ -1,5 +1,17 @@
 #include "../include/channel.hpp"
 
+Channel::Channel() {
+    _server = NULL;
+    _name = "";
+    _user_limit = 0;
+    _user_size = 0;
+    _topic = "";
+    _room_password = "";
+    _invite_only = false;
+    _topic_admin_only = false;
+    _room_password_active = false;
+}
+
 Channel::Channel(Server *server, std::string name, Client client): _name(name), _server(server)
 {
     _Admins.push_back(client);
@@ -148,6 +160,10 @@ void    Channel::add_Invited(Client user)
         throw UserAlreadyInvitedException();
     _Invited.push_back(user);
 };
+
+Channel::getName() const{
+    return _name;
+}
 
 vector<Client> Channel::getClients()
 {

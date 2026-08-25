@@ -17,6 +17,7 @@ class Channel
         bool           _topic_admin_only;
         bool           _room_password_active;
     public:
+    Channel();
         Channel(Server, std::string, Client);
         Channel(Server, std::string, std::string, Client);
         ~Channel();
@@ -32,6 +33,7 @@ class Channel
         void    add_Invited(Client);
         void    editUser_limit();
         void    broadcast(std::string);
+        std::string     getName() const;
         vector<Client>  getClients();
         vector<Client>  getAdmins();
         Client  getAdmins(Client);
