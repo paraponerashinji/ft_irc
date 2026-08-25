@@ -1,4 +1,6 @@
 #include "server.hpp"
+#include "./include/client.hpp"
+#include "./include/channel.hpp"
 
 Server::Server() {
     _password = "";
@@ -31,12 +33,30 @@ Client Server::getClient(int fd) {
     return Client();
 }
 
+Client &Server::getClientRef(int fd) {
+    for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+        if (it->getFd() == fd)
+            return *it;
+    }
+    static Client empty_client(-1);
+    return empty_client;
+}
+
 Client Server::getClient(std::string nickname) {
     for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
         if (it->getNickname() == nickname)
             return *it;
     }
     return Client();
+}
+
+Client &Server::getClientRef(std::string nickname) {
+    for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+        if (it->getNickname() == nickname)
+            return *it;
+    }
+    static Client empty_client(-1);
+    return empty_client;
 }
 
 Channel Server::getChannel(std::string name) {
@@ -99,80 +119,90 @@ void Server::receiveMessage(Client &c, std::string message) {
     if (message.empty())
         return;
 
-    c.appendToBuffer(message);
+    std::string line = message;
+    if (!line.empty() && line[line.size() - 1] == '\n')
+        line.erase(line.size() - 1);
+    if (!line.empty() && line[line.size() - 1] == '\r')
+        line.erase(line.size() - 1);
 
-    std::string buffer = c.getBuffer();
-    while (true) {
-        std::string::size_type pos = buffer.find("\r\n");
-        if (pos == std::string::npos)
-            break;
+    if (line.empty())
+        return;
 
-        std::string line = buffer.substr(0, pos);
-        buffer.erase(0, pos + 2);
+    std::string command = line;
+    std::string param = "";
 
-        if (line.empty())
-            continue;
-
-        std::string command = line;
-        if (!command.empty() && command[command.size() - 1] == '\n')
-            command.erase(command.size() - 1);
-        if (!command.empty() && command[command.size() - 1] == '\r')
-            command.erase(command.size() - 1);
-
-        std::string upper = command;
-        for (std::string::size_type i = 0; i < upper.size(); ++i)
-            upper[i] = static_cast<char>(std::toupper(static_cast<unsigned char>(upper[i])));
-
-        std::string param = "";
-        std::string::size_type space = command.find(' ');
-        if (space != std::string::npos) {
-            param = command.substr(space + 1);
-            command = command.substr(0, space);
-        }
-
-        if (upper == "PASS") {
-            if (param == _password)
-                c.setRegistered(true);
-            continue;
-        }
-
-        if (upper == "NICK") {
-            c.setNickname(param);
-            continue;
-        }
-
-        if (upper == "USER") {
-            c.setUsername(param);
-            continue;
-        }
-
-        if (upper == "JOIN") {
-            createChannel(param, c);
-            continue;
-        }
-
-        if (upper == "QUIT") {
-            removeClient(c.getFd());
-            return;
-        }
-
-        if (upper == "PRIVMSG") {
-            if (param.empty())
-                continue;
-            std::string::size_type pos2 = param.find(' ');
-            if (pos2 != std::string::npos) {
-                std::string target = param.substr(0, pos2);
-                std::string text = param.substr(pos2 + 1);
-                if (!text.empty() && text[0] == ':')
-                    text.erase(0, 1);
-                for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-                    if (it->getNickname() == target)
-                        sendMessage(*it, "PRIVMSG " + target + " :" + text + "\r\n");
-                }
-            }
-            continue;
-        }
+    std::string::size_type space = line.find(' ');
+    if (space != std::string::npos)
+    {
+        command = line.substr(0, space);
+        param = line.substr(space + 1);
     }
 
-    c.setBuffer(buffer);
+    std::string upper = command;
+    for (std::string::size_type i = 0; i < upper.size(); ++i)
+        upper[i] = static_cast<char>(std::toupper(static_cast<unsigned char>(upper[i])));
+
+    if (upper == "PASS")
+    {
+        if (param == _password)
+            c.setRegistered(true);
+        return;
+    }
+
+    if (upper == "NICK")
+    {
+        c.setNickname(param);
+        return;
+    }
+
+    if (upper == "USER")
+    {
+        std::string username = param;
+        std::string::size_type first_space = username.find(' ');
+        if (first_space != std::string::npos)
+            username = username.substr(0, first_space);
+        c.setUsername(username);
+        return;
+    }
+
+    if (upper == "JOIN")
+    {
+        std::string channel_name = param;
+        std::string::size_type first_space = channel_name.find(' ');
+        if (first_space != std::string::npos)
+            channel_name = channel_name.substr(0, first_space);
+
+        if (!channel_name.empty())
+        {
+            createChannel(channel_name, c);
+            c.addChannel(channel_name);
+        }
+        return;
+    }
+
+    if (upper == "QUIT")
+    {
+        removeClient(c.getFd());
+        return;
+    }
+
+    if (upper == "PRIVMSG")
+    {
+        if (param.empty())
+            return;
+
+        std::string::size_type first_space = param.find(' ');
+        if (first_space == std::string::npos)
+            return;
+
+        std::string target = param.substr(0, first_space);
+        std::string text = param.substr(first_space + 1);
+        if (!text.empty() && text[0] == ':')
+            text.erase(0, 1);
+
+        Client target_client = getClient(target);
+        if (target_client.getFd() != -1)
+            sendMessage(target_client, "PRIVMSG " + target + " :" + text + "\r\n");
+        return;
+    }
 }

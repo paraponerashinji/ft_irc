@@ -1,6 +1,11 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
+class Client;
+class Channel;
+
+int create_server_socket(int port);
+
 /*Class   Server {
     private:
     vector<Client> Clients
@@ -73,6 +78,8 @@ class   Server {
 
     Client  getClient(int fd);
     Client  getClient(std::string nickname);
+    Client &getClientRef(int fd);
+    Client &getClientRef(std::string nickname);
 
     Channel getChannel(std::string name);
     std::vector<Channel>    getChannels() const;
