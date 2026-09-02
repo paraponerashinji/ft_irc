@@ -68,3 +68,18 @@ void Client::clearBuffer()
 {
     _buffer = "";
 }
+
+// ============ MESSAGE ============
+
+void    Client::sendMessage(Client *receiver, std::string msg)
+{
+    std::string to_send = "::";
+    to_send.append(getNickname());
+    to_send.accumule("!");
+    to_send.append(getUsername());
+    to_send.append("@");
+    to_send.append(getHostname());
+    to_send.append(" ");
+    to_send.append(msg);
+    _server->sendMessage(receiver, to_send);
+};
