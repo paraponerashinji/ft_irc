@@ -27,15 +27,26 @@ void Pass::exec(std::string msg)
     it = std::find(_server._Clients.begin(), _server._Clients.end(), user);
     if (it != _server._Clients.end())
         throw ClientExistAlreadyException();
-    std::string password = msg.substr(msg.find(' '));
+    std::string password = "";
+    if (!msg.empty())
+    {
+        size_t space = msg.find(' ');
+        if (space != std::string::npos)
+            password = msg.substr(space + 1);
+    }
     if (password == _server->getPassword())
         _server->create_client(_user);
 };
 
 void Nick::exec(std::string msg)
 {
-    std::string name = msg.substr(msg.find(' '));
-    _user.setNick(name);
+    std::string nickname = "";
+    if (!msg.empty()) {
+        size_t space = msg.find(' ');
+        if (space != std::string::npos)
+            nickname = msg.substr(space + 1);
+    }
+    _user.setNickname(nickname);
 };
 
 void User::exec(std::string msg)
@@ -54,54 +65,48 @@ void User::exec(std::string msg)
 std::vector<std::string> Privmsg::split(std::string text)
 {
     std::vector<std::string> targets;
-    int buffer = 0;
-    text.erase(std::remove(text.begin(), text.end(), ' '));
-    for (int i = 0; i < text.length(); i++)
+    size_t sep = msg.find(' ');
+    std::string rest = msg.substr(sep + 1);
+    size_t colon = rest.find(':');
+    std::string target_part = rest.substr(0, colon);
+    std::string content = rest.substr(colon + 1);
+    std::stringstream ss(target_part);
+    std::string token;
+    while (std::getline(ss, token, ','))
     {
-        if (text[i] == ',')
-            targets.push_back(text.substr(buffer, i));
-        buffer = i;
-    }
-    targets.push_back(text.substr(buffer, text.end));
-    for (int i = 0; i < targets.length(); i++)
-    {
-        for (std::string:iterator it = targets[i].begin(); it != targets[i].end(); ++it)
-            if (*it != ' ')
-                break;
-        if (it == targets[i].end())
-            throw InvalidTargetInputException();
+        targets.push_back(token);
     }
     return targets;
-}
+};
 
 void Privmsg::exec(std::string msg)
 {
     std::string txt = msg.substr(msg.find(' '));
     std::string content = txt.substr(txt.find(':') + 1, txt.end());
     std::vector<std::string> targets = split(txt.substr(txt.find(':') - 1));
-    for (int i = 0; i < targets.end(); i++)
+    for (int i = 0; i < targets.size(); ++i)
     {
         if (targets[i][0] == '&' || targets[i][0] == '#')
         {
             targets[i].erase(1);
             try
             {
-                _server.getChannel(targets[i]).broadcast(_user, content);
+                _server->getChannel(targets[i]).broadcast(_user, content);
             }
             catch (std::exception &e)
             {
-                _server.ircERROR(_user, e.errorCode());
+                _server->ircERROR(_user, e.errorCode());
             }
         }
         else
         {
             try
             {
-                _server.getClients(targets[i]).sendMessage(_user, content);
+                _server->getClients(targets[i]).sendMessage(_user, content);
             }
             catch (std::exception &e)
             {
-                _server.ircERROR(_user, e.errorCode());
+                _server->ircERROR(_user, e.errorCode());
             }
         }
     }
@@ -109,24 +114,58 @@ void Privmsg::exec(std::string msg)
 
 void Quit::exec(std::string msg)
 {
-    
+    (void)msg;
+    std::vector<std::string> channels = _user.getChannels();
+    for (size_t i = 0; i < channels.size(); ++i)
+    {
+        try
+        {
+            Channel &channel = _server->getChannel(channels[i]);
+            channel.quit(&_user);
+        }
+        catch (std::exception &e)
+        {
+            _server.ircERROR(_user, e.errorCode());
+        }
+    }
+    _server->removeClient(_user.getFd());
+};
+
+void Part::exec(std::string msg)
+{
+    std::string channel = msg;
+    size_t space = channel.find(' ');
+    if (space != std::string::npos)
+        channel = channel.substr(space + 1);
+    Channel &chan = _server->getChannel(channel);
+    chan.quit(&_user);
 };
 
 void Join::exec(std::string msg)
 {
-    std::string raw_msg = msg.substr(msg.find(' '));
-    std::string channel = raw_msg.substr(raw_msg.begin(), raw_msg.find(' '));
-    raw_msg = raw_msg.substr(raw_msg.find(' ') + 1);
     try
     {
-        if (raw_msg.empty())
-            _server.getChannel(channel).join(_server.getClients(_user));
+        std::string params = msg;
+        size_t first = params.find(' ');
+        if (first != std::string::npos)
+            params = params.substr(first + 1);
+        std::string channel = params;
+        std::string key = "";
+        size_t space = channel.find(' ');
+        if (space != std::string::npos)
+        {
+            key = channel.substr(space + 1);
+            channel = channel.substr(0, space);
+        }
+        Channel &chan = _server->getChannel(channel);
+        if (key.empty())
+            chan.join(&_user);
         else
-            _server.getChannel(channel).join(_server.getClients(_user), raw_msg);
+            chan.join(&_user, key);
     }
     catch (std::exception &e)
     {
-        _server.ircERROR(_user, e.errorCode());
+        _server->ircERROR(_user, e.errorCode());
     }
 };
 

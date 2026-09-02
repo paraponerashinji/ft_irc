@@ -2,10 +2,10 @@ class Message
 {
     protected:
         Server      *_server;
-        Client      _user;
+        Client      *_user;
         std::string _text;
     public:
-        Message(Server*, Client, std::string);
+        Message(Server*, Client*, std::string);
         virtual ~Message();
         virtual void exec(std::string) = 0;
 };

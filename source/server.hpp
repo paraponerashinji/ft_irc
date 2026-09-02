@@ -1,4 +1,4 @@
-class server
+class Server
 {
 private:
     /*
@@ -11,13 +11,12 @@ private:
 public:
     server();
     ~server();
-    vector<Client>  getClients();
-    Client          getClients(std::string);
-    vector<Channel> getChannels();
-    Channel         getChannel(std::string);
+    vector<Client*>  getClients();
+    Client          *getClients(std::string);
+    vector<Channel*> getChannels();
+    Channel         *getChannel(std::string);
     void            ircERROR(Client, int);
     void            receiveMessage(Client, std::string);
     void            sendMessage(Client, std::string);
     std::string     getPassword();
-    
 };
