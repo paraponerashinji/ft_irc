@@ -13,7 +13,7 @@ private:
     std::string         _realname;      // vrai nom
     std::string         _hostname;      // adresse IP du client
     std::string         _buffer;        // accumule les données reçues
-    bool                _is_registered; // true = client totalement identifié (NICK + USER reçus)
+    bool                _is_registered; // true = mot de passe PASS validé
     std::vector<std::string> _channels; // liste des channels où il est
 
 public:
