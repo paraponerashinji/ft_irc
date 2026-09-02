@@ -1,4 +1,7 @@
 #include "../include/channel.hpp"
+#include "../include/client.hpp"
+#include "../include/server.hpp"
+#include "../include/message.hpp"
 
 Channel::Channel() {
     _server = NULL;
@@ -12,7 +15,7 @@ Channel::Channel() {
     _room_password_active = false;
 }
 
-Channel::Channel(Server *server, std::string name, Client client): _name(name), _server(server)
+Channel::Channel(Server *server, std::string name, Client client): _server(server), _name(name)
 {
     _Admins.push_back(&client);
     _Clients.push_back(&client);
@@ -23,7 +26,7 @@ Channel::Channel(Server *server, std::string name, Client client): _name(name), 
     _room_password_active = false;
 };
 
-Channel::Channel(Server *server, std::string name, std::string password, Client client): _name(name), _server(server)
+Channel::Channel(Server *server, std::string name, std::string password, Client client): _server(server), _name(name)
 {
     _Admins.push_back(&client);
     _Clients.push_back(&client);
@@ -42,13 +45,13 @@ Channel::~Channel()
 std::string Channel::hash_password(const std::string& password)
 {
     unsigned int hash = 67676767;
-    for (int i = 0; i < password.length(); i++)
+    for (size_t i = 0; i < password.length(); i++)
     {
         hash = hash * 31 + password[i];
     }
     std::stringstream ss;
     ss << std::hex << hash;
-    return (ss.string());
+    return (ss.str());
 };
 
 void    Channel::join(Client *user)
@@ -76,7 +79,6 @@ void    Channel::join(Client *user)
 
 void    Channel::join(Client *user, Join password)
 {
-    //
     if (std::find(_Clients.begin(), _Clients.end(), user) != _Clients.end())
         return;
 
@@ -89,7 +91,7 @@ void    Channel::join(Client *user, Join password)
     if (_user_limit != 0 && _user_size >= _user_limit)
         throw ChannelFullException();
     std::vector<Client*>::iterator it = std::find(_Invited.begin(), _Invited.end(), user);
-    if (_room_password_active && hash_password(password.getPassword()) != _password)
+    if (_room_password_active && hash_password(password.getPassword()) != _room_password)
         throw InvalidPasswordException();
     _Clients.push_back(user);
     _user_size++;
@@ -101,10 +103,10 @@ void    Channel::join(Client *user, Join password)
 void    Channel::quit(Client *user)
 {
     std::vector<Client*>::iterator it;
-    it = std::find(_Admins.begin(), _Admins.end(), user)
+    it = std::find(_Admins.begin(), _Admins.end(), user);
     if (it != _Admins.end())
         _Admins.erase(it);
-    it = std::find(_Clients.begin(), _Clients.end(), user)
+    it = std::find(_Clients.begin(), _Clients.end(), user);
     _Clients.erase(it);
     _user_size--;
     if (_user_size == 1)
@@ -112,8 +114,9 @@ void    Channel::quit(Client *user)
     user->removeChannel(_name);
 };
 
-void Channel::kick(Client *user)
+void Channel::kick(Client *user, std::string msg)
 {
+    (void)msg;
     std::vector<Client*>::iterator it = std::find(_Clients.begin(), _Clients.end(), user);
     if (it == _Clients.end())
         throw MemberNotFoundException();
@@ -130,7 +133,7 @@ void    Channel::editTopic(std::string topic)
     _topic = topic;
 };
 
-void    Channel::editInvite_only();
+void    Channel::editInvite_only()
 {
     _invite_only = !_invite_only;
 };
@@ -146,7 +149,7 @@ void    Channel::set_password(std::string password)
     _room_password_active = true;
 };
 
-void    Channel::add_Admin(Client user)
+void    Channel::add_Admin(Client *user)
 {
     if (std::find(_Clients.begin(), _Clients.end(), user) == _Clients.end())
         throw MemberNotFoundException();
@@ -159,7 +162,7 @@ void    Channel::editUser_limit()
     _user_limit = !_user_limit;
 };
 
-void    Channel::broadcast(Client *user, std::string message);
+void    Channel::broadcast(Client *sender, std::string message)
 {
     if (std::find(_Clients.begin(), _Clients.end(), sender) == _Clients.end())
         throw MemberNotFoundException();
@@ -170,7 +173,7 @@ void    Channel::broadcast(Client *user, std::string message);
     }
 };
 
-void    Channel::add_Invited(Client user)
+void    Channel::add_Invited(Client *user)
 {
     if (std::find(_Clients.begin(), _Clients.end(), user) != _Clients.end())
         throw MemberAlreadyHereException();
@@ -179,22 +182,22 @@ void    Channel::add_Invited(Client user)
     _Invited.push_back(user);
 };
 
-Channel::getName() const
+std::string Channel::getName() const
 {
     return _name;
 }
 
-vector<Client*> Channel::getClients()
+std::vector<Client*> Channel::getClients()
 {
     return _Clients;
 };
 
-vector<Client*> Channel::getAdmins()
+std::vector<Client*> Channel::getAdmins()
 {
     return _Admins;
 };
 
-Client  *Channel::getClients(Client *user) const
+Client  *Channel::getClients(Client *user)
 {
     std::vector<Client*>::iterator it;
     it = std::find(_Clients.begin(), _Clients.end(), user);
@@ -203,10 +206,10 @@ Client  *Channel::getClients(Client *user) const
     return (user);
 };
 
-Client  *Channel::getAdmins(Client *user) const
+Client  *Channel::getAdmins(Client *user)
 {
     std::vector<Client*>::iterator it;
-    it = std::find(_Admins.begin(), _Admins.end(), user)
+    it = std::find(_Admins.begin(), _Admins.end(), user);
     if (it == _Admins.end())
         throw UserIsNotAdminException();
     return (user);
@@ -217,27 +220,42 @@ bool    Channel::isTopicAdmin()
     return _topic_admin_only;
 };
 
-int Channel::ChannelFullException() const
+int Channel::ChannelFullException::errorCode() const
 {
     return (471);
 };
 
-int Channel::InvalidPasswordException() const
+int Channel::InvalidPasswordException::errorCode() const
 {
     return (475);
 };
 
-int Channel::MissingInviteException() const
+int Channel::MissingInviteException::errorCode() const
 {
     return (473);
 };
 
-int Channel::MissingAuthorizationException() const
+int Channel::MissingAuthorizationException::errorCode() const
 {
     return (481);
 };
 
-int Channel::MemberNotFoundException() const
+int Channel::MemberNotFoundException::errorCode() const
 {
     return (401);
+};
+
+int Channel::MemberAlreadyHereException::errorCode() const
+{
+    return (0);
+};
+
+int Channel::UserAlreadyInvitedException::errorCode() const
+{
+    return (0);
+};
+
+int Channel::UserIsNotAdminException::errorCode() const
+{
+    return (0);
 };

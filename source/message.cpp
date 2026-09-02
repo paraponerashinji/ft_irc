@@ -6,26 +6,30 @@
 /*   By: aharder <aharder@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 12:26:19 by aharder           #+#    #+#             */
-/*   Updated: 2026/08/14 17:59:37 by aharder          ###   ########.fr       */
+/*   Updated: 2026/09/02 15:39:41 by aharder          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "message.hpp"
+#include "client.hpp"
+#include "server.hpp"
+#include "channel.hpp"
 
-Message::Message(Server *server, Client user, std::string text): _server(server), _user(user), _text(text)
+Message::Message(Server *server, Client *user, std::string text): _server(server), _user(user), _text(text)
 {
-    exec(_text);
-}
+};
 
 Message::~Message()
 {
-}
+};
 
 void Pass::exec(std::string msg)
 {
+    (void)msg;
+    /*
     std::vector<Client>::iterator it;
-    it = std::find(_server._Clients.begin(), _server._Clients.end(), user);
-    if (it != _server._Clients.end())
+    it = std::find(_server->getClients().begin(), _server->getClients().end(), user);
+    if (it != _server->getClients().end())
         throw ClientExistAlreadyException();
     std::string password = "";
     if (!msg.empty())
@@ -36,6 +40,7 @@ void Pass::exec(std::string msg)
     }
     if (password == _server->getPassword())
         _server->create_client(_user);
+    */
 };
 
 void Nick::exec(std::string msg)
@@ -46,23 +51,23 @@ void Nick::exec(std::string msg)
         if (space != std::string::npos)
             nickname = msg.substr(space + 1);
     }
-    _user.setNickname(nickname);
+    _user->setNickname(nickname);
 };
 
 void User::exec(std::string msg)
 {
     std::string username = msg.substr(msg.find(' '));
-    if (_user.getUsername() != NULL)
-            throw UsernameAlreadySetException();
-    for (std::vector<Client>::iterator it = _server.getClients.begin(); it != _server.getClients.end(); ++it)
+    if (!_user->getUsername().empty())
+            throw UserNameAlreadySetException();
+    for (std::vector<Client>::iterator it = _server->getClients()->begin(); it != _server->getClients()->end(); ++it)
     {
-        if (*it.getUsername() == username)
-            throw UsernameAlreadyTakenException();
+        if ((*it).getUsername() == username)
+            throw UserNameAlreadyTakenException();
     }
-    _user.setUsername(username);
+    _user->setUsername(username);
 };
 
-std::vector<std::string> Privmsg::split(std::string text)
+std::vector<std::string> Privmsg::split(std::string msg)
 {
     std::vector<std::string> targets;
     size_t sep = msg.find(' ');
@@ -81,32 +86,34 @@ std::vector<std::string> Privmsg::split(std::string text)
 
 void Privmsg::exec(std::string msg)
 {
-    std::string txt = msg.substr(msg.find(' '));
-    std::string content = txt.substr(txt.find(':') + 1, txt.end());
+    std::string txt = msg.substr(msg.find(' '), msg.find(':'));
+    std::string content = txt.substr(txt.find(':') + 1);
     std::vector<std::string> targets = split(txt.substr(txt.find(':') - 1));
-    for (int i = 0; i < targets.size(); ++i)
+    for (size_t i = 0; i < targets.size(); ++i)
     {
         if (targets[i][0] == '&' || targets[i][0] == '#')
         {
             targets[i].erase(1);
             try
             {
-                _server->getChannel(targets[i]).broadcast(_user, content);
+                Channel *channel = _server->getChannel(targets[i]);
+                channel->broadcast(_user, content);
             }
             catch (std::exception &e)
             {
-                _server->ircERROR(_user, e.errorCode());
+                //_server->ircERROR(_user, e.errorCode());
             }
         }
         else
         {
             try
             {
-                _server->getClients(targets[i]).sendMessage(_user, content);
+                Client *client = _server->getClientPtr(targets[i]);
+                _user->sendMessage(client, content);
             }
             catch (std::exception &e)
             {
-                _server->ircERROR(_user, e.errorCode());
+               // _server->ircERROR(_user, e.errorCode());
             }
         }
     }
@@ -115,20 +122,20 @@ void Privmsg::exec(std::string msg)
 void Quit::exec(std::string msg)
 {
     (void)msg;
-    std::vector<std::string> channels = _user.getChannels();
+    std::vector<std::string> channels = _user->getChannels();
     for (size_t i = 0; i < channels.size(); ++i)
     {
         try
         {
-            Channel &channel = _server->getChannel(channels[i]);
-            channel.quit(&_user);
+            Channel *channel = _server->getChannel(channels[i]);
+            channel->quit(_user);
         }
         catch (std::exception &e)
         {
-            _server.ircERROR(_user, e.errorCode());
+          //  _server->ircERROR(_user, e.errorCode());
         }
     }
-    _server->removeClient(_user.getFd());
+    _server->removeClient(_user->getFd());
 };
 
 void Part::exec(std::string msg)
@@ -137,8 +144,8 @@ void Part::exec(std::string msg)
     size_t space = channel.find(' ');
     if (space != std::string::npos)
         channel = channel.substr(space + 1);
-    Channel &chan = _server->getChannel(channel);
-    chan.quit(&_user);
+    Channel *chan = _server->getChannel(channel);
+    chan->quit(_user);
 };
 
 void Join::exec(std::string msg)
@@ -157,68 +164,71 @@ void Join::exec(std::string msg)
             key = channel.substr(space + 1);
             channel = channel.substr(0, space);
         }
-        Channel &chan = _server->getChannel(channel);
+        Channel *chan = _server->getChannel(channel);
         if (key.empty())
-            chan.join(&_user);
+            chan->join(_user);
         else
-            chan.join(&_user, key);
+            chan->join(_user, *this);
     }
     catch (std::exception &e)
     {
-        _server->ircERROR(_user, e.errorCode());
+      //  _server->ircERROR(_user, e.errorCode());
     }
 };
 
 void Topic::exec(std::string msg)
 {
     std::string raw_msg = msg.substr(msg.find(' '));
-    std::string channel = raw_msg.substr(raw_msg.begin(), raw_msg.find(' '));
+    std::string channel = raw_msg.substr(0, raw_msg.find(' '));
     raw_msg = raw_msg.substr(raw_msg.find(' ') + 1);
     try
     {
-        _server.getChannel(channel).getClients(_user);
-        if (_server.getChannel(channel).isTopicAdmin())
-            _server.getChannel(channel).getAdmins(_user);
-        _server.getChannel(channel).editTopic(raw_msg);
+        Channel *chan = _server->getChannel(channel);
+        chan->getClients(_user);
+        if (chan->isTopicAdmin())
+            chan->getAdmins(_user);
+        chan->editTopic(raw_msg);
     }
     catch (std::exception &e)
     {
-        _server.ircERROR(_user, e.errorCode());
+       // _server->ircERROR(_user, e.errorCode());
     }
 };
 
 void Kick::exec(std::string msg)
 {
     std::string raw_msg = msg.substr(msg.find(' '));
-    std::string channel = raw_msg.substr(raw_msg.begin(), raw_msg.find(' '));
+    std::string channel = raw_msg.substr(0, raw_msg.find(' '));
     raw_msg = raw_msg.substr(raw_msg.find(' ') + 1);
-    std::string target = raw_msg.substr(raw_msg.begin(), raw_msg.find(' '));
+    std::string target = raw_msg.substr(0, raw_msg.find(' '));
     raw_msg = raw_msg.substr(raw_msg.find(' ') + 1);
     try
     {
-        _server.getChannel(channel).getAdmins(_user);
-        _server.getChannel(channel).kick(_server.getClients(target), raw_msg);
+        Channel *chan = _server->getChannel(channel);
+        chan->getAdmins(_user);
+        chan->kick(_server->getClientPtr(target), raw_msg);
     }
     catch (std::exception &e)
     {
-        _server.ircERROR(_user, e.errorCode());
+       // _server->ircERROR(_user, e.errorCode());
     }
 };
 
 void Invite::exec(std::string msg)
 {
     std::string raw_msg = msg.substr(msg.find(' '));
-    std::string target = raw_msg.substr(raw_msg.begin(), raw_msg.find(' '));
+    std::string target = raw_msg.substr(0, raw_msg.find(' '));
     raw_msg = raw_msg.substr(raw_msg.find(' ') + 1);
-    std::string channel = raw_msg.substr(raw_msg.begin(), raw_msg.find(' '));
+    std::string channel = raw_msg.substr(0, raw_msg.find(' '));
     try
     {
-        _server.getChannel(channel).getClients(_user);
-        _server.getChannel(channel).add_Invited(_server.getClients(target));
+        Channel *chan = _server->getChannel(channel);
+        chan->getClients(_user);
+        chan->add_Invited(_server->getClientPtr(target));
     }
     catch (std::exception &e)
     {
-        _server.ircERROR(_user, e.errorCode());
+       // _server->ircERROR(_user, e.errorCode());
     }
 };
 

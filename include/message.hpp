@@ -1,3 +1,15 @@
+#ifndef MESSAGE_HPP
+#define MESSAGE_HPP
+#include <string>
+#include <vector>
+#include <sstream>
+#include <algorithm>
+class Server;
+class Client;
+class Channel;
+class Join;
+
+// TODO Refaire les exceptions
 class Message
 {
     protected:
@@ -14,6 +26,7 @@ class Pass: public Message
 {
     public:
         void exec(std::string);
+
     class   ClientExistAlreadyException: public std::exception
     {
         int errorCode() const;
@@ -60,13 +73,19 @@ class Quit: public Message
 class Join: public Message
 {
     private:
-        _password;
+        std::string _password;
     public:
         std::string getPassword();
         void exec(std::string);
 };
 
 class Topic: public Message
+{
+    public:
+        void exec(std::string);
+};
+
+class Part: public Message
 {
     public:
         void exec(std::string);
@@ -89,3 +108,5 @@ class Mode: public Message
     public:
         void exec(std::string);
 };
+
+#endif
