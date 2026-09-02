@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include <cstdio>
 class Server;
 class Client;
 class Message;
