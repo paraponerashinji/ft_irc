@@ -142,10 +142,18 @@ void Server::receiveMessage(Client &c, std::string message) {
     for (std::string::size_type i = 0; i < upper.size(); ++i)
         upper[i] = static_cast<char>(std::toupper(static_cast<unsigned char>(upper[i])));
 
+    if (!c.isRegistered() && upper != "PASS")
+    {
+        sendMessage(c, "464 :Password required");
+        return;
+    }
+
     if (upper == "PASS")
     {
         if (param == _password)
             c.setRegistered(true);
+        else
+            sendMessage(c, "464 :Password incorrect");
         return;
     }
 
@@ -200,9 +208,20 @@ void Server::receiveMessage(Client &c, std::string message) {
         if (!text.empty() && text[0] == ':')
             text.erase(0, 1);
 
+        std::cout << "[PRIVMSG] " << c.getNickname() << " => " << target << " : " << text << std::endl;
+
         Client target_client = getClient(target);
         if (target_client.getFd() != -1)
-            sendMessage(target_client, "PRIVMSG " + target + " :" + text + "\r\n");
+        {
+            std::string formatted_msg = ":" + c.getNickname() + " PRIVMSG " + target + " :" + text;
+            sendMessage(target_client, formatted_msg);
+            std::cout << "  -> Message envoyé à " << target << std::endl;
+        }
+        else
+        {
+            std::cout << "  -> Erreur: client " << target << " non trouvé" << std::endl;
+            sendMessage(c, "401 " + target + " :No such nick/channel");
+        }
         return;
     }
 }

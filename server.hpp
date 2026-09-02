@@ -3,8 +3,10 @@
 
 class Client;
 class Channel;
+class Server;
 
 int create_server_socket(int port);
+void run_server_loop(Server &server);
 
 /*Class   Server {
     private:
