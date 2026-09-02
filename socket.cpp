@@ -1,4 +1,11 @@
 #include "server.hpp"
+#include <iostream>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <cstring>
 
 int create_server_socket(int port) {
 

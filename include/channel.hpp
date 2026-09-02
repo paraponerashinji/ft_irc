@@ -7,8 +7,8 @@
 #include <cstdio>
 class Server;
 class Client;
-class Message;
 class Join;
+class Message;
 
 class Channel
 {
@@ -32,6 +32,7 @@ class Channel
         ~Channel();
         std::string hash_password(const std::string&);
         void    join(Client*);
+        // void    join(Client*, Join);  // Classe Join non implémentée
         void    join(Client*, Join);
         void    quit(Client*);
         void    kick(Client*, std::string);

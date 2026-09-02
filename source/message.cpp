@@ -23,6 +23,11 @@ Message::~Message()
 {
 };
 
+std::string Join::getPassword()
+{
+    return _password;
+};
+
 void Pass::exec(std::string msg)
 {
     (void)msg;

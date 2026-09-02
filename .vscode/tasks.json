@@ -1,0 +1,118 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build",
+			"type": "shell",
+			"command": "make",
+			"args": [],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Clean",
+			"type": "shell",
+			"command": "make",
+			"args": [
+				"clean"
+			],
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild",
+			"type": "shell",
+			"command": "sh",
+			"args": [
+				"-c",
+				"make clean && make"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild source-based IRC",
+			"type": "shell",
+			"command": "make clean && make 2>&1 | tail -120",
+			"args": [],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild source-based IRC",
+			"type": "shell",
+			"command": "make clean && make 2>&1 | tail -120",
+			"args": [],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild source-based IRC v2",
+			"type": "shell",
+			"command": "make clean && make 2>&1 | tail -120",
+			"args": [],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after headers",
+			"type": "shell",
+			"command": "make clean && make 2>&1 | tail -120",
+			"args": [],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild after server accessors",
+			"type": "shell",
+			"command": "make clean && make 2>&1 | tail -120",
+			"args": [],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild with root server",
+			"type": "shell",
+			"command": "make clean && make 2>&1 | tail -120",
+			"args": [],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Final reconnect build",
+			"type": "shell",
+			"command": "make clean && make 2>&1 | tail -120",
+			"args": [],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Final verify build",
+			"type": "shell",
+			"command": "make clean && make 2>&1",
+			"args": [],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		}
+	]
+}

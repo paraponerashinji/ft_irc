@@ -42,6 +42,18 @@ Client &Server::getClientRef(int fd) {
     return empty_client;
 }
 
+std::vector<Client> *Server::getClients() const {
+    return const_cast<std::vector<Client>*>(&_clients);
+}
+
+Client *Server::getClientPtr(std::string nickname) {
+    for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+        if (it->getNickname() == nickname)
+            return &(*it);
+    }
+    return NULL;
+}
+
 Client Server::getClient(std::string nickname) {
     for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
         if (it->getNickname() == nickname)
@@ -59,12 +71,12 @@ Client &Server::getClientRef(std::string nickname) {
     return empty_client;
 }
 
-Channel Server::getChannel(std::string name) {
+Channel *Server::getChannel(std::string name) {
     for (std::vector<Channel>::iterator it = _channels.begin(); it != _channels.end(); ++it) {
         if (it->getName() == name)
-            return *it;
+            return &(*it);
     }
-    return Channel();
+    return NULL;
 }
 
 std::vector<Channel> Server::getChannels() const {
@@ -100,7 +112,7 @@ void Server::createChannel(std::string name, Client creator) {
             return;
     }
 
-    Channel new_channel(*this, name, creator);
+    Channel new_channel(this, name, creator);
     _channels.push_back(new_channel);
 }
 

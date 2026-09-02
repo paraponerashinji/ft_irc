@@ -3,6 +3,7 @@
 
 class Client;
 class Channel;
+class Server;
 
 int create_server_socket(int port);
 
@@ -94,7 +95,6 @@ class   Server {
 
     void    sendMessage(Client &c, std::string message);
     void    receiveMessage(Client &c, std::string message);
-    
     void    ircERROR(Client *user, int code);
 };
 

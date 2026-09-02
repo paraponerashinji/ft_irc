@@ -1,4 +1,11 @@
-SRCS = source/channel.cpp source/client.cpp source/message.cpp source/server.cpp server.cpp socket.cpp main.cpp
+SRCS = socket.cpp \
+	   server.cpp \
+	   source/message.cpp \
+	   source/channel.cpp \
+	   source/client.cpp \
+	   main.cpp \
+	   irc_loop.cpp
+
 OBJS = $(SRCS:.cpp=.o)
 NAME = IRC
 CXX = c++
@@ -10,7 +17,7 @@ all: $(NAME)
 $(NAME): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $(NAME) $(OBJS)
 
-%.o: %.c
+%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:

@@ -1,8 +1,12 @@
 #include "server.hpp"
+#include "./include/client.hpp"
+#include <cstdio>
+#include <map>
 
 void run_server_loop(Server &server)
 {
     std::vector<struct pollfd> fds; // liste des sockets a surveiller
+    std::map<int, Client> pending_clients;
     struct pollfd server_pollfd;
     server_pollfd.fd = server.getServerFd();
     server_pollfd.events = POLLIN; // on attend des donnees sur la socket serveur
@@ -34,6 +38,11 @@ void run_server_loop(Server &server)
                 continue;
             }
 
+            char ip[INET_ADDRSTRLEN];
+            std::memset(ip, 0, sizeof(ip));
+            if (inet_ntop(AF_INET, &client_addr.sin_addr, ip, sizeof(ip)) == NULL)
+                std::snprintf(ip, sizeof(ip), "unknown");
+
             int flags = fcntl(client_fd, F_GETFL, 0);
             if (flags < 0 || fcntl(client_fd, F_SETFL, flags | O_NONBLOCK) < 0)
             {
@@ -42,8 +51,9 @@ void run_server_loop(Server &server)
                 continue;
             }
 
-            Client new_client(client_fd); // cree un client avec son fd
-            server.addClient(new_client); // ajoute le client au serveur
+            Client new_client(client_fd); // cree un client en attente de PASS
+            new_client.setHostname(ip);
+            pending_clients[client_fd] = new_client;
 
             struct pollfd client_pollfd;
             client_pollfd.fd = client_fd; // fd du client
@@ -64,29 +74,62 @@ void run_server_loop(Server &server)
             if (n <= 0)
             {
                 close(fds[i].fd); // ferme la socket client
+                pending_clients.erase(fds[i].fd);
                 server.removeClient(fds[i].fd); // retire le client du serveur
                 fds.erase(fds.begin() + i); // retire la socket de la liste poll
                 --i;
                 continue;
             }
 
-            Client &client = server.getClientRef(fds[i].fd);
-            if (client.getFd() == -1)
-            {
-                Client new_client(fds[i].fd);
-                server.addClient(new_client);
-                client = server.getClientRef(fds[i].fd);
-            }
+            Client *buffer_client = NULL;
+            Client &server_client = server.getClientRef(fds[i].fd);
+            std::map<int, Client>::iterator pending_it = pending_clients.find(fds[i].fd);
 
-            client.appendToBuffer(std::string(buffer, n)); // ajoute les donnees recues au buffer du client
+            if (server_client.getFd() != -1)
+                buffer_client = &server_client;
+            else if (pending_it != pending_clients.end())
+                buffer_client = &pending_it->second;
 
-            while (client.getBuffer().find("\r\n") != std::string::npos)
+            if (buffer_client == NULL)
+                continue;
+
+            buffer_client->appendToBuffer(std::string(buffer, n)); // ajoute les donnees recues au buffer du client
+
+            while (true)
             {
-                std::string::size_type pos = client.getBuffer().find("\r\n");
-                std::string line = client.getBuffer().substr(0, pos); // extrait une ligne complete IRC
-                std::string remaining = client.getBuffer().substr(pos + 2); // garde le reste du buffer
-                client.setBuffer(remaining); // remplace le buffer sans la ligne traitee
-                server.receiveMessage(client, line); // envoie la commande au serveur pour traitement
+                Client *client_ptr = NULL;
+                bool active_client = false;
+                Client &current_server_client = server.getClientRef(fds[i].fd);
+                std::map<int, Client>::iterator current_pending_it = pending_clients.find(fds[i].fd);
+
+                if (current_server_client.getFd() != -1)
+                {
+                    client_ptr = &current_server_client;
+                    active_client = true;
+                }
+                else if (current_pending_it != pending_clients.end())
+                    client_ptr = &current_pending_it->second;
+
+                if (client_ptr == NULL)
+                    break;
+
+                if (client_ptr->getBuffer().find("\r\n") == std::string::npos)
+                    break;
+
+                std::string::size_type pos = client_ptr->getBuffer().find("\r\n");
+                std::string line = client_ptr->getBuffer().substr(0, pos); // extrait une ligne complete IRC
+                std::string remaining = client_ptr->getBuffer().substr(pos + 2); // garde le reste du buffer
+                client_ptr->setBuffer(remaining); // remplace le buffer sans la ligne traitee
+                server.receiveMessage(*client_ptr, line); // envoie la commande au serveur pour traitement
+
+                if (!active_client && client_ptr->isRegistered())
+                {
+                    server.addClient(*client_ptr); // ajoute le client au serveur apres PASS
+                    pending_clients.erase(fds[i].fd);
+                }
+
+                if (remaining.empty())
+                    break;
             }
         }
     }

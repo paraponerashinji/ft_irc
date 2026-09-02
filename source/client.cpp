@@ -1,5 +1,6 @@
 #include "../include/client.hpp"
 #include <iostream>
+#include <sys/socket.h>
 
 Client::Client() : _fd(-1), _nickname(""), _username(""), 
                    _realname(""), _hostname(""), _buffer(""), 
@@ -69,6 +70,7 @@ void Client::clearBuffer()
     _buffer = "";
 }
 
+<<<<<<< HEAD
 // ============ MESSAGE ============
 
 void    Client::sendMessage(Client *receiver, std::string msg)
@@ -83,3 +85,14 @@ void    Client::sendMessage(Client *receiver, std::string msg)
     to_send.append(msg);
     _server->sendMessage(receiver, to_send);
 };
+=======
+void Client::sendMessage(Client *receiver, std::string msg)
+{
+    if (!receiver || receiver->getFd() < 0 || msg.empty())
+        return;
+
+    if (msg[msg.size() - 1] != '\n')
+        msg += "\r\n";
+    ::send(receiver->getFd(), msg.c_str(), msg.size(), 0);
+}
+>>>>>>> 37a2fa1 (tried to connect all the parts, PASS handled)
