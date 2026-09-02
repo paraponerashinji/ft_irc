@@ -3,6 +3,13 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
+#include <cctype>
+#include <string>
+#include <unistd.h>
+#include <cstdlib>
+#include <iomanip>
+#include <cstdio>
 
 class Client
 {
@@ -43,6 +50,8 @@ public:
 
     void                appendToBuffer(std::string data);
     void                clearBuffer();
+
+    void                sendMessage(Client *receiver, std::string msg);
 };
 
 #endif

@@ -1,3 +1,8 @@
+#include "server.hpp"
+#include "client.hpp"
+#include "message.hpp"
+#include "channel.hpp"
+
 void Server::receiveMessage(Client &sender, std::string message)
 {
     if (message.empty())
@@ -53,6 +58,7 @@ void Server::receiveMessage(Client &sender, std::string message)
     else if (upper == "TOPIC")
     {
         Topic topic(this, &sender, params);
+        topic.exec();
         return;
     }
     else if (upper == "MODE")
@@ -71,17 +77,17 @@ void Server::receiveMessage(Client &sender, std::string message)
     }
 };
 
-vector<Client *>    Server::getClients()
+std::vector<Client *>    Server::getClients()
 {
     return (_clients);
 };
 
-vector<Channel *>  Server::getChannels()
+std::vector<Channel *>  Server::getChannels()
 {
     return (_channels);
 };
 
-Clients *Server::getClients(std::string target)
+Client *Server::getClients(std::string target)
 {
     
 };
