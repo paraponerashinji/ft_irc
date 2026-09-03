@@ -70,9 +70,8 @@ void Client::clearBuffer()
     _buffer = "";
 }
 
-<<<<<<< HEAD
 // ============ MESSAGE ============
-
+/*
 void    Client::sendMessage(Client *receiver, std::string msg)
 {
     std::string to_send = "::";
@@ -84,8 +83,7 @@ void    Client::sendMessage(Client *receiver, std::string msg)
     to_send.append(" ");
     to_send.append(msg);
     _server->sendMessage(receiver, to_send);
-};
-=======
+};*/
 void Client::sendMessage(Client *receiver, std::string msg)
 {
     if (!receiver || receiver->getFd() < 0 || msg.empty())
@@ -95,4 +93,3 @@ void Client::sendMessage(Client *receiver, std::string msg)
         msg += "\r\n";
     ::send(receiver->getFd(), msg.c_str(), msg.size(), 0);
 }
->>>>>>> 37a2fa1 (tried to connect all the parts, PASS handled)
