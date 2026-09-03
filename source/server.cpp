@@ -262,12 +262,7 @@ void Server::receiveMessage(Client &sender, std::string message)
     std::string upper = cmd;
     for (size_t i = 0; i < upper.size(); ++i)
         upper[i] = static_cast<char>(std::toupper(static_cast<unsigned char>(upper[i])));
-    if (upper == "PASS")
-    {
-        //Pass pass(this, &sender, params);
-        return;
-    }
-    else if (upper == "NICK")
+    if (upper == "NICK")
     {
         //Nick nick(this, &sender, params);
         return;
@@ -306,6 +301,10 @@ void Server::receiveMessage(Client &sender, std::string message)
     {
         //Mode mode(this, &sender, params);
         return;
+    }
+    else if (upper == "PART")
+    {
+        Part
     }
     else if (upper == "QUIT")
     {
