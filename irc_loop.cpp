@@ -125,6 +125,7 @@ void run_server_loop(Server &server)
                 if (!active_client && client_ptr->isRegistered())
                 {
                     server.addClient(*client_ptr); // ajoute le client au serveur apres PASS
+                    //std::cout << "001 :RPL_WELCOME" << std::endl;
                     pending_clients.erase(fds[i].fd);
                 }
 
