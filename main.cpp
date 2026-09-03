@@ -2,8 +2,10 @@
 
 int main(int ac, char **av)
 {
-    if (ac != 3)
+    if (ac != 3) {
+        std::cout << "./IRC <port> <password>" << std::endl;
         return 1;
+    }
 
     int port = std::atoi(av[1]);
     int server_fd = create_server_socket(port); // creer la socket serveur
