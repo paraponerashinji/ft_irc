@@ -236,4 +236,10 @@ void Server::receiveMessage(Client &c, std::string message) {
         }
         return;
     }
-}
+};
+
+void    Server::ircERROR(Client *user, int code)
+{
+    (void)user;
+    (void)code;
+};
