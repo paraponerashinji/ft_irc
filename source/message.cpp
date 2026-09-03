@@ -6,7 +6,7 @@
 /*   By: aharder <aharder@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 12:26:19 by aharder           #+#    #+#             */
-/*   Updated: 2026/09/02 15:39:41 by aharder          ###   ########.fr       */
+/*   Updated: 2026/09/03 13:49:20 by aharder          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "client.hpp"
 #include "server.hpp"
 #include "channel.hpp"
+#include "exception.hpp"
 
 Message::Message(Server *server, Client *user, std::string text): _server(server), _user(user), _text(text)
 {
@@ -72,6 +73,17 @@ void User::exec(std::string msg)
     _user->setUsername(username);
 };
 
+int User::UserNameAlreadySetException::errorCode() const
+{
+    return (462);
+};
+
+int User::UserNameAlreadyTakenException::errorCode() const
+{
+    return (475);
+};
+
+
 std::vector<std::string> Privmsg::split(std::string msg)
 {
     std::vector<std::string> targets;
@@ -104,9 +116,9 @@ void Privmsg::exec(std::string msg)
                 Channel *channel = _server->getChannel(targets[i]);
                 channel->broadcast(_user, content);
             }
-            catch (std::exception &e)
+            catch (IrcException &e)
             {
-                //_server->ircERROR(_user, e.errorCode());
+                _server->ircERROR(_user, e.errorCode());
             }
         }
         else
@@ -116,9 +128,9 @@ void Privmsg::exec(std::string msg)
                 Client *client = _server->getClientPtr(targets[i]);
                 _user->sendMessage(client, content);
             }
-            catch (std::exception &e)
+            catch (IrcException &e)
             {
-               // _server->ircERROR(_user, e.errorCode());
+                _server->ircERROR(_user, e.errorCode());
             }
         }
     }
@@ -135,9 +147,9 @@ void Quit::exec(std::string msg)
             Channel *channel = _server->getChannel(channels[i]);
             channel->quit(_user);
         }
-        catch (std::exception &e)
+        catch (IrcException &e)
         {
-          //  _server->ircERROR(_user, e.errorCode());
+            _server->ircERROR(_user, e.errorCode());
         }
     }
     _server->removeClient(_user->getFd());
@@ -175,9 +187,9 @@ void Join::exec(std::string msg)
         else
             chan->join(_user, *this);
     }
-    catch (std::exception &e)
+    catch (IrcException &e)
     {
-      //  _server->ircERROR(_user, e.errorCode());
+        _server->ircERROR(_user, e.errorCode());
     }
 };
 
@@ -194,9 +206,9 @@ void Topic::exec(std::string msg)
             chan->getAdmins(_user);
         chan->editTopic(raw_msg);
     }
-    catch (std::exception &e)
+    catch (IrcException &e)
     {
-       // _server->ircERROR(_user, e.errorCode());
+        _server->ircERROR(_user, e.errorCode());
     }
 };
 
@@ -213,9 +225,9 @@ void Kick::exec(std::string msg)
         chan->getAdmins(_user);
         chan->kick(_server->getClientPtr(target), raw_msg);
     }
-    catch (std::exception &e)
+    catch (IrcException &e)
     {
-       // _server->ircERROR(_user, e.errorCode());
+        _server->ircERROR(_user, e.errorCode());
     }
 };
 
@@ -231,9 +243,9 @@ void Invite::exec(std::string msg)
         chan->getClients(_user);
         chan->add_Invited(_server->getClientPtr(target));
     }
-    catch (std::exception &e)
+    catch (IrcException &e)
     {
-       // _server->ircERROR(_user, e.errorCode());
+        _server->ircERROR(_user, e.errorCode());
     }
 };
 

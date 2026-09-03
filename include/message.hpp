@@ -4,12 +4,12 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include "exception.hpp"
 class Server;
 class Client;
 class Channel;
 class Join;
 
-// TODO Refaire les exceptions
 class Message
 {
     protected:
@@ -27,7 +27,7 @@ class Pass: public Message
     public:
         void exec(std::string);
 
-    class   ClientExistAlreadyException: public std::exception
+    class   ClientExistAlreadyException: public IrcException
     {
         int errorCode() const;
     };
@@ -43,11 +43,11 @@ class User: public Message
 {
     public:
         void exec(std::string);
-    class   UserNameAlreadyTakenException: public std::exception
+    class   UserNameAlreadyTakenException: public IrcException
     {
         int errorCode() const;
     };
-    class   UserNameAlreadySetException: public std::exception
+    class   UserNameAlreadySetException: public IrcException
     {
         int errorCode() const;
     };
@@ -58,7 +58,7 @@ class Privmsg: public Message
     public:
         std::vector<std::string> split(std::string);
         void         exec(std::string);
-        class   InvalidTargetInputException: public std::exception
+        class   InvalidTargetInputException: public IrcException
         {
             int errorCode() const;
         };

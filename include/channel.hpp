@@ -5,6 +5,8 @@
 #include <sstream>
 #include <algorithm>
 #include <cstdio>
+#include <sstream>
+#include "exception.hpp"
 class Server;
 class Client;
 class Join;
@@ -32,8 +34,7 @@ class Channel
         ~Channel();
         std::string hash_password(const std::string&);
         void    join(Client*);
-        // void    join(Client*, Join);  // Classe Join non implémentée
-        void    join(Client*, Join);
+        void    join(Client*, std::string);
         void    quit(Client*);
         void    kick(Client*, std::string);
         void    editTopic(std::string);
@@ -50,35 +51,39 @@ class Channel
         Client  *getAdmins(Client*);
         Client  *getClients(Client*);
         bool    isTopicAdmin();
-        class   ChannelFullException: public std::exception
+        class   ChannelFullException: public IrcException
         {
             int errorCode() const;
         };
-        class   InvalidPasswordException: public std::exception
+        class   InvalidPasswordException: public IrcException
         {
             int errorCode() const;
         };
-        class   MissingInviteException: public std::exception
+        class   MissingInviteException: public IrcException
         {
             int errorCode() const;
         };
-        class   MissingAuthorizationException: public std::exception
+        class   MissingAuthorizationException: public IrcException
         {
             int errorCode() const;
         };
-        class   MemberNotFoundException: public std::exception
+        class   MemberNotFoundException: public IrcException
         {
             int errorCode() const;
         };
-        class   MemberAlreadyHereException: public std::exception
+        class   MemberAlreadyHereException: public IrcException
         {
             int errorCode() const;
         };
-        class   UserAlreadyInvitedException: public std::exception
+        class   UserAlreadyInvitedException: public IrcException
         {
             int errorCode() const;
         };
-        class   UserIsNotAdminException: public std::exception
+        class   UserIsNotAdminException: public IrcException
+        {
+            int errorCode() const;
+        };
+        class   UserNotInChannelException: public IrcException
         {
             int errorCode() const;
         };
