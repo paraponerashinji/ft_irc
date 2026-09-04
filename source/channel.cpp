@@ -118,7 +118,7 @@ void    Channel::quit(Client *user, std::string msg)
     user->removeChannel(_name);
 };
 
-void Channel::kick(Client *user, Client *target, std::string msg)
+void Channel::kick(Client *user, Client *target)
 {
     if (std::find(_Clients.begin(), _Clients.end(), user) == _Clients.end())
         throw UserNotInChannelException();
@@ -127,11 +127,6 @@ void Channel::kick(Client *user, Client *target, std::string msg)
     std::vector<Client*>::iterator it = std::find(_Clients.begin(), _Clients.end(), target);
     if (it == _Clients.end())
         throw MemberNotFoundException();
-    std::ostringstream output;
-    output << "KICK #" << _name << target->getUsername();
-    if (!msg.empty())
-        output << " :" << msg;
-    broadcast(user, output);
     _Clients.erase(it);
     it = std::find(_Admins.begin(), _Admins.end(), target);
     if (it != _Admins.end())
@@ -200,8 +195,8 @@ void    Channel::editUser_limit(Client *user)
 
 void    Channel::broadcast(Client *sender, std::string message)
 {
-    if (std::find(_Clients.begin(), _Clients.end(), sender) == _Clients.end())
-        throw UserNotInChannelException();
+    //if (std::find(_Clients.begin(), _Clients.end(), sender) == _Clients.end())
+    //    throw UserNotInChannelException();
     for (std::vector<Client*>::iterator it = _Clients.begin(); it != _Clients.end(); ++it)
     {
         if (*it != sender)
@@ -213,7 +208,7 @@ void    Channel::add_Invited(Client *user, Client *target)
 {
     if (std::find(_Clients.begin(), _Clients.end(), user) == _Clients.end())
         throw UserNotInChannelException();
-    if (std::find(_Admins.begin(), _Admins.end(), user) == _Admins.end() && _topic_admin_only)
+    if (std::find(_Admins.begin(), _Admins.end(), user) == _Admins.end() && _invite_only)
         throw UserIsNotAdminException();
     if (std::find(_Clients.begin(), _Clients.end(), target) != _Clients.end())
         throw MemberAlreadyHereException();
