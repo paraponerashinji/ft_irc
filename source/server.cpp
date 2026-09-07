@@ -239,6 +239,17 @@ void Server::receiveMessage(Client &c, std::string message) {
     }
 }
 
+bool    Server::isFullyRegistered(Client *sender)
+{
+    if (sender->getUsername().empty())
+        return false;
+    if (sender->getNickname().empty())
+        return false;
+    if (sender->getHostname().empty())
+        return false;
+    return true;
+};
+
 void    Server::ircERROR(Client *user, int code)
 {
     (void)user;
@@ -269,8 +280,7 @@ void Server::receiveMessage(Client &sender, std::string message)
     }
     else if (upper == "USER")
     {
-        //User user(this, &sender, params);
-        return;
+        user(txt)
     }
     else if (upper == "JOIN")
     {

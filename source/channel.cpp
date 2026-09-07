@@ -102,7 +102,7 @@ void    Channel::join(Client *user, std::string password)
     user->addChannel(_name);
 };
 
-void    Channel::quit(Client *user, std::string msg)
+void    Channel::quit(Client *user)
 {
     std::vector<Client*>::iterator it;
     it = std::find(_Clients.begin(), _Clients.end(), user);
