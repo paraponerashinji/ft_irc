@@ -1,3 +1,6 @@
+#include "exception.cpp"
+#include "channel.cpp"
+#include "client.cpp"
 std::vector<std::string> Server::Parse_Line(std::string text)
 {
     std::stringstream ss(text);
@@ -79,12 +82,12 @@ void    Server::join(Client *sender, std::string text)
                 {
                     if (j < keys.size())
                         keys.push_back(std::string());
-                    if (!keys[j].empty && keys[j][0] == ':')
+                    if (!keys[j].empty() && keys[j][0] == ':')
                         keys[j].erase(0, 1);
                     if (keys[j].empty())
-                        createChannel(sender, channels[j]);
+                        createChannel(channels[j], *sender);
                     else
-                        createChannel(sender, channels[j], keys[j]);
+                        //createChannel(channels[j], *sender, keys[j]);
                     continue;
                 }
                 else
@@ -94,7 +97,7 @@ void    Server::join(Client *sender, std::string text)
     }
     catch (IrcException &e)
     {
-        ircERROR(sender, e.errorCode(), params);
+        ircERROR(sender, e.errorCode());
     }
 };
 
@@ -142,7 +145,7 @@ void    Server::part(Client *sender, std::string text)
     }
     catch (IrcException &e)
     {
-        ircERROR(sender, e.errorCode(), params);
+        ircERROR(sender, e.errorCode());
     }
 };
 
@@ -171,7 +174,7 @@ void    Server::privmsg(Client *sender, std::string text)
                 Channel *channel = getChannel(channels[j]);
                 channel->getClients(sender);
                 if (params[1].empty())
-                    throw EmpyMessageException();
+                    throw ERR_NOTEXTTOSEND();
                 std::ostringstream output;         
                 output << "PRIVMSG #" << channel->getName() << " " << params[1];
                 channel->broadcast(sender, output.str());
@@ -180,16 +183,16 @@ void    Server::privmsg(Client *sender, std::string text)
             {
                 Client *client = getClientPtr(channels[j]);
                 if (params[1].empty())
-                    throw EmpyMessageException();
+                    throw ERR_NOTEXTTOSEND();
                 std::ostringstream output;          
-                output << "PRIVMSG " << client->getName() << " " << params[1];
+                output << "PRIVMSG " << client->getNickname() << " " << params[1];
                 sender->sendMessage(client, output.str());
             }
         }
     }
     catch (IrcException &e)
     {
-        ircERROR(sender, e.errorCode(), params);
+        ircERROR(sender, e.errorCode());
     }
 };
 
@@ -223,17 +226,17 @@ void    Server::kick(Client *sender, std::string text)
             Channel *channel = getChannel(channels[j]);
             for (size_t y = 0; y < users.size(); y++)
             {
-                Client *target = channel->getClientPtr(users[y]);
+                Client *target = channel->getClient(users[y]);
                 channel->kick(sender, target);
                 std::ostringstream output;
                 if (params.size() >= 3)
                 {
-                    output << "KICK #" << channel->getName() << " " << target->getName() << " " << params[2];
-                    channel->broadcast(sender, output);
-                    sender->sendMessage(target, output);
+                    output << "KICK #" << channel->getName() << " " << target->getNickname() << " " << params[2];
+                    channel->broadcast(sender, output.str());
+                    sender->sendMessage(target, output.str());
                     continue ;
                 }
-                output << "KICK #" << channel->getName() << " " << target->getName();
+                output << "KICK #" << channel->getName() << " " << target->getNickname();
                 channel->broadcast(sender, output.str());
                 sender->sendMessage(target, output.str());
             }
@@ -241,7 +244,7 @@ void    Server::kick(Client *sender, std::string text)
     }
     catch (IrcException &e)
     {
-        ircERROR(sender, e.errorCode(), params);
+        ircERROR(sender, e.errorCode());
     }
 };
 
@@ -262,10 +265,10 @@ void    Server::invite(Client *sender, std::string text)
         try
         {
             Channel *channel = getChannel(params[1]);
-            Client *target = channel->getClientPtr(params[0]);
+            Client *target = channel->getClient(params[0]);
             channel->add_Invited(sender, target);
             std::ostringstream output;
-            output << "INVITE " << target->getName() << " #" << channel->getName();
+            output << "INVITE " << target->getNickname() << " #" << channel->getName();
             sender->sendMessage(target, output.str());
         }
         catch (IrcException &e)
@@ -274,14 +277,14 @@ void    Server::invite(Client *sender, std::string text)
             {
                 Client *target = getClientPtr(params[0]);
                 std::ostringstream output;
-                output << "INVITE " << target->getName() << " #" << params[1];
+                output << "INVITE " << target->getNickname() << " #" << params[1];
                 sender->sendMessage(target, output.str());
             }
         }
     }
     catch (IrcException &e)
     {
-        ircERROR(sender, e.errorCode(), params);
+        ircERROR(sender, e.errorCode());
     }
 };
 
@@ -295,7 +298,7 @@ void    Server::topic(Client *sender, std::string text)
         if (params.size() < 2)
             throw ERR_NEEDMOREPARAMS();
         if (params[0][0] != '#' && params[0][0] != '&')
-            throw SyntaxErrorException();
+            throw ERR_NOSUCHCHANNEL();
         params[0].erase(0, 1);
         Channel *channel = getChannel(params[0]);
         channel->editTopic(sender, params[1]);
@@ -305,7 +308,7 @@ void    Server::topic(Client *sender, std::string text)
     }
     catch (IrcException &e)
     {
-        ircERROR(sender, e.errorCode(), params);
+        ircERROR(sender, e.errorCode());
     }
 };
 
@@ -320,11 +323,11 @@ void    Server::mode(Client *sender, std::string text)
         if (params.size() < 2)
             throw ERR_NEEDMOREPARAMS();
         if (params[0][0] != '#' && params[0][0] != '&')
-            throw SyntaxErrorException();
+            throw ERR_NOSUCHCHANNEL();
         params[0].erase(0, 1);
         Channel *channel = getChannel(params[0]);
         if (params[1][0] != '+' && params[1][0] != '-')
-            throw SyntaxErrorException();
+            throw ERR_UNKNOWNMODE();
         if (params[1][0] == '+')
             make = true;
         params[1].erase(0,1);
@@ -344,9 +347,9 @@ void    Server::mode(Client *sender, std::string text)
                     if (params.size() < k)
                         throw ERR_NEEDMOREPARAMS();
                     if (make)
-                        channel->add_Admin(sender, params[k]);
+                        channel->add_Admin(sender, getClientPtr(params[k]));
                     else
-                        channel->remove_Admin(sender, params[k]);  
+                        channel->remove_Admin(sender, getClientPtr(params[k]));  
                     k++;
                     break;
                 case 1:
@@ -384,6 +387,6 @@ void    Server::mode(Client *sender, std::string text)
     }
     catch (IrcException &e)
     {
-        ircERROR(sender, e.errorCode(), params);
+        ircERROR(sender, e.errorCode());
     }
 };

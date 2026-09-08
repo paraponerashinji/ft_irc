@@ -1,5 +1,11 @@
 #ifndef EXCEPTION_HPP
 #define EXCEPTION_HPP
+#include <string>
+#include <vector>
+#include <sstream>
+#include <algorithm>
+#include <cstdio>
+#include <sstream>
 class IrcException: public std::exception
 {
     public:
