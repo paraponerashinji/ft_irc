@@ -64,8 +64,8 @@ class   Server {
 
     private:
 
-    std::vector<Client>     _clients;
-    std::vector<Channel>    _channels;
+    std::vector<Client*>     _clients;
+    std::vector<Channel*>    _channels;
     std::string             _password;
     int                     _serverFd;
 
@@ -84,20 +84,22 @@ class   Server {
     Client &getClientRef(std::string nickname);
 
     Channel *getChannel(std::string name);
-    std::vector<Channel>    getChannels() const;
-    std::vector<Client>     *getClients() const;
+    std::vector<Channel*>    getChannels() const;
+    std::vector<Client*>    *getClients() const;
+
     std::string             getPassword() const;
 
-    void    addClient(Client c);
+    void    addClient(Client *c);
     void    removeClient(int fd);
 
-    void    createChannel(std::string name, Client creator);
+    void    createChannel(std::string name, Client *creator);
 
     void    sendMessage(Client &c, std::string message);
     void    receiveMessage(Client &c, std::string message);
     void    ircERROR(Client *user, int code);
     bool    isFullyRegistered(Client *sender);
     // HANDLERS
+    std::vector<std::string> Parse_Line(std::string text);
     void    join(Client *sender, std::string text);
     void    part(Client *sender, std::string text);
     void    privmsg(Client *sender, std::string text);
