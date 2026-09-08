@@ -54,6 +54,7 @@ class   ERR_ERRONEUSNICKNAME: public IrcException
 {
     int errorCode() const;
     ERR_ERRONEUSNICKNAME(const std::string &target) : IrcException(target) {}
+    int errorCode() const; 
 };
 
 class   ERR_NICKNAMEINUSE: public IrcException

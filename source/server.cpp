@@ -256,6 +256,27 @@ void    Server::ircERROR(Client *user, int code)
     (void)user;
     (void)code;
 };
+
+void Server::cleanDisconnectedClients() {
+    for (size_t i = 0; i < _clients.size(); ++i) {
+        if (_clients[i]->shouldDisconnect()) {
+            int fd = _clients[i]->getFd();
+            
+            // Fermer le socket
+            close(fd);
+            
+            // Supprimer le fd du tableau pollfd
+            removeFromPollFds(fd);
+            
+            // Libérer la mémoire
+            delete _clients[i];
+            _clients.erase(_clients.begin() + i);
+            --i;
+        }
+    }
+}
+
+
 /*
 void Server::receiveMessage(Client &sender, std::string message)
 {

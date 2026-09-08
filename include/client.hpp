@@ -36,6 +36,7 @@ public:
     std::string         getRealname() const;
     std::string         getHostname() const;
     std::string         getBuffer() const;
+    std::string         getPrefix() const;
     bool                isRegistered() const;
     std::vector<std::string>    getChannels() const;
 
