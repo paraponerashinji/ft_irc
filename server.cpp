@@ -1,7 +1,6 @@
-#include "server.hpp"
+#include "./include/server.hpp"
 #include "./include/client.hpp"
 #include "./include/channel.hpp"
-
 Server::Server() {
     _password = "";
     _serverFd = -1;
@@ -10,9 +9,9 @@ Server::Server() {
 Server::Server(std::string password, int server_fd) : _password(password), _serverFd(server_fd) {}
 
 Server::~Server() {
-    for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getFd() >= 0)
-            close(it->getFd());
+    for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+        if ((*it)->getFd() >= 0)
+            close((*it)->getFd());
     }
     _clients.clear();
     _channels.clear();
@@ -26,60 +25,61 @@ int Server::getServerFd() const {
 }
 
 Client Server::getClient(int fd) {
-    for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getFd() == fd)
-            return *it;
+    for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+        if ((*it)->getFd() == fd)
+            return *(*it);
     }
     return Client();
 }
 
 Client &Server::getClientRef(int fd) {
-    for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getFd() == fd)
-            return *it;
+    for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+        if ((*it)->getFd() == fd)
+            return *(*it);
     }
-    static Client empty_client(-1);
+    static Client empty_client(this, -1);
     return empty_client;
 }
 
-std::vector<Client> *Server::getClients() const {
-    return const_cast<std::vector<Client>*>(&_clients);
+std::vector<Client*> *Server::getClients() const {
+    return const_cast<std::vector<Client*>*>(&_clients);
 }
 
 Client *Server::getClientPtr(std::string nickname) {
-    for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getNickname() == nickname)
-            return &(*it);
+    for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+        if ((*it)->getNickname() == nickname)
+            return (*it);
     }
     return NULL;
 }
 
 Client Server::getClient(std::string nickname) {
-    for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getNickname() == nickname)
-            return *it;
+    for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+        if ((*it)->getNickname() == nickname)
+            return *(*it);
     }
     return Client();
 }
 
 Client &Server::getClientRef(std::string nickname) {
-    for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getNickname() == nickname)
-            return *it;
+    for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+        if ((*it)->getNickname() == nickname)
+            return *(*it);
     }
-    static Client empty_client(-1);
+    static Client empty_client(this, -1);
     return empty_client;
 }
 
 Channel *Server::getChannel(std::string name) {
-    for (std::vector<Channel>::iterator it = _channels.begin(); it != _channels.end(); ++it) {
-        if (it->getName() == name)
-            return &(*it);
+    for (std::vector<Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it) {
+        if ((*it)->getName() == name)
+            return &*(*it);
     }
+    throw   ERR_NOSUCHCHANNEL(name);
     return NULL;
 }
 
-std::vector<Channel> Server::getChannels() const {
+std::vector<Channel*> Server::getChannels() const {
     return _channels;
 }
 
@@ -87,32 +87,32 @@ std::string Server::getPassword() const {
     return _password;
 }
 
-void Server::addClient(Client c) {
-    for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getFd() == c.getFd())
+void Server::addClient(Client *c) {
+    for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+        if ((*it)->getFd() == c->getFd())
             return;
     }
     _clients.push_back(c);
 }
 
 void Server::removeClient(int fd) {
-    for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getFd() == fd) {
-            if (it->getFd() >= 0)
-                close(it->getFd());
+    for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+        if ((*it)->getFd() == fd) {
+            if ((*it)->getFd() >= 0)
+                close((*it)->getFd());
             _clients.erase(it);
             return;
         }
     }
 }
 
-void Server::createChannel(std::string name, Client creator) {
-    for (std::vector<Channel>::iterator it = _channels.begin(); it != _channels.end(); ++it) {
-        if (it->getName() == name)
+void Server::createChannel(std::string name, Client *creator) {
+    for (std::vector<Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it) {
+        if ((*it)->getName() == name)
             return;
     }
 
-    Channel new_channel(this, name, creator);
+    Channel *new_channel = new Channel(this, name, creator);
     _channels.push_back(new_channel);
 }
 
@@ -123,7 +123,7 @@ void Server::sendMessage(Client &c, std::string message) {
     std::string data = message;
     if (data[data.size() - 1] != '\n')
         data += "\r\n";
-
+    std::cout << "To " << c.getNickname() << " " << data;
     send(c.getFd(), data.c_str(), data.size(), 0);
 }
 
@@ -194,8 +194,8 @@ void Server::receiveMessage(Client &c, std::string message) {
 
         if (!channel_name.empty())
         {
-            createChannel(channel_name, c);
-            c.addChannel(channel_name);
+            //createChannel(channel_name, c);
+            //c.addChannel(channel_name);
         }
         return;
     }
@@ -240,6 +240,5 @@ void Server::receiveMessage(Client &c, std::string message) {
 
 void    Server::ircERROR(Client *user, int code)
 {
-    (void)user;
-    (void)code;
+    std::cout << user->getNickname() << " " << code << std::endl; 
 };

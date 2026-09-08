@@ -10,10 +10,11 @@
 #include <cstdlib>
 #include <iomanip>
 #include <cstdio>
-
+#include "server.hpp"
 class Client
 {
 private:
+    Server              *_server;
     int                 _fd;            // la socket
     std::string         _nickname;      // pseudo du client
     std::string         _username;      // nom d'utilisateur
@@ -26,7 +27,7 @@ private:
 public:
 
     Client();
-    Client(int fd);
+    Client(Server *server, int fd);
     ~Client();
 
     int                 getFd() const;

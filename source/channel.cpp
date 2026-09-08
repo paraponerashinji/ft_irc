@@ -2,7 +2,7 @@
 #include "../include/client.hpp"
 #include "../include/server.hpp"
 #include "../include/message.hpp"
-
+#include "../include/exception.hpp"
 Channel::Channel() {
     _server = NULL;
     _name = "";
@@ -15,24 +15,32 @@ Channel::Channel() {
     _room_password_active = false;
 }
 
-Channel::Channel(Server *server, std::string name, Client client): _server(server), _name(name)
+Channel::Channel(Server *server, std::string name, Client *client): _server(server), _name(name)
 {
-    _Admins.push_back(&client);
-    _Clients.push_back(&client);
+    if (server->isFullyRegistered(client))
+    {
+        _Admins.push_back(client);
+        _Clients.push_back(client);
+        _user_size = 1;
+    }
+    client->addChannel(name);
     _user_limit = 0;
-    _user_size = 0;
     _invite_only = false;
     _topic_admin_only = false;
     _room_password_active = false;
 };
 
-Channel::Channel(Server *server, std::string name, std::string password, Client client): _server(server), _name(name)
+Channel::Channel(Server *server, std::string name, std::string password, Client *client): _server(server), _name(name)
 {
-    _Admins.push_back(&client);
-    _Clients.push_back(&client);
+    if (server->isFullyRegistered(client))
+    {
+        _Admins.push_back(client);
+        _Clients.push_back(client);
+        _user_size = 1;
+    }
+    client->addChannel(name);
     _room_password = hash_password(password);
     _user_limit = 0;
-    _user_size = 0;
     _invite_only = false;
     _topic_admin_only = false;
     _room_password_active = true;
@@ -58,43 +66,69 @@ void    Channel::join(Client *user)
 {
     if (std::find(_Clients.begin(), _Clients.end(), user) != _Clients.end())
     {
-        MemberAlreadyHereException();
+        std::string t(user.getNickname()):
+        t.append(" ")
+        t.append(_name);
+        throw ERR_USERONCHANNEL(t);
     }
     if (_invite_only)
     {
-        if (std::find(_Invited.begin(), _Invited.end(), user) == _Invited.end())
-            throw MissingInviteException();
+        bool invited = false;
+        std::cout << _Invited.size() << std::endl;
+        for (std::vector<Client*>::iterator it = _Invited.begin(); it != _Invited.end(); ++it)
+        {
+            if (*it && (*it)->getNickname() == user->getNickname())
+            {
+                std::cout << (*it)->getNickname() << std::endl;
+                invited = true;
+                break;
+            }
+        }
+        if (!invited)
+            throw ERR_INVITEONLYCHAN(_name);
     }
-
     if (_user_limit != 0 && _user_size >= _user_limit)
-        throw ChannelFullException();
-    std::vector<Client*>::iterator it = std::find(_Invited.begin(), _Invited.end(), user);
+        throw ERR_CHANNELISFULL(_name);
+    
     if (_room_password_active)
-        throw InvalidPasswordException();
+        throw ERR_BADCHANNELKEY(_name);
+    
     _Clients.push_back(user);
     _user_size++;
+    user->addChannel(_name);
+    std::vector<Client*>::iterator it = std::find(_Invited.begin(), _Invited.end(), user);
     if (it != _Invited.end())
         _Invited.erase(it);
-    user->addChannel(_name);
 };
 
 void    Channel::join(Client *user, std::string password)
 {
-    if (std::find(_Clients.begin(), _Clients.end(), user) == _Clients.end())
+    if (std::find(_Clients.begin(), _Clients.end(), user) != _Clients.end())
     {
-        throw MemberAlreadyHereException();
+        std::string t(user.getNickname()):
+        t.append(" ")
+        t.append(_name);
+        throw ERR_USERONCHANNEL(t);
     }
     if (_invite_only)
     {
-        if (std::find(_Invited.begin(), _Invited.end(), user) == _Invited.end())
-            throw MissingInviteException();
+        bool invited = false;
+        for (std::vector<Client*>::iterator it = _Invited.begin(); it != _Invited.end(); ++it)
+        {
+            if (*it && (*it)->getNickname() == user->getNickname())
+            {
+                invited = true;
+                break;
+            }
+        }
+        if (!invited)
+            throw ERR_INVITEONLYCHAN(_name);
     }
-
     if (_user_limit != 0 && _user_size >= _user_limit)
-        throw ChannelFullException();
+        throw ERR_CHANNELISFULL(_name);
     std::vector<Client*>::iterator it = std::find(_Invited.begin(), _Invited.end(), user);
     if (_room_password_active && hash_password(password) != _room_password)
-        throw InvalidPasswordException();
+        throw ERR_BADCHANNELKEY(_name);
     _Clients.push_back(user);
     _user_size++;
     if (it != _Invited.end())
@@ -107,7 +141,7 @@ void    Channel::quit(Client *user)
     std::vector<Client*>::iterator it;
     it = std::find(_Clients.begin(), _Clients.end(), user);
     if (it == _Clients.end())
-        throw UserNotInChannelException();
+        throw ERR_NOTONCHANNEL(_name);
     _Clients.erase(it);
     it = std::find(_Admins.begin(), _Admins.end(), user);
     if (it != _Admins.end())
@@ -121,12 +155,12 @@ void    Channel::quit(Client *user)
 void Channel::kick(Client *user, Client *target)
 {
     if (std::find(_Clients.begin(), _Clients.end(), user) == _Clients.end())
-        throw UserNotInChannelException();
+        throw ERR_NOTONCHANNEL(_name);
     if (std::find(_Admins.begin(), _Admins.end(), user) == _Admins.end())
-        throw UserIsNotAdminException();
+        throw ERR_CHANOPRIVSNEEDED(_name);
     std::vector<Client*>::iterator it = std::find(_Clients.begin(), _Clients.end(), target);
     if (it == _Clients.end())
-        throw MemberNotFoundException();
+        throw ERR_NOTONCHANNEL(_name);
     _Clients.erase(it);
     it = std::find(_Admins.begin(), _Admins.end(), target);
     if (it != _Admins.end())
@@ -138,36 +172,36 @@ void Channel::kick(Client *user, Client *target)
 void    Channel::editTopic(Client *user, std::string topic)
 {
     if (std::find(_Clients.begin(), _Clients.end(), user) == _Clients.end())
-        throw UserNotInChannelException();
+        throw ERR_NOTONCHANNEL(_name);
     if (std::find(_Admins.begin(), _Admins.end(), user) == _Admins.end() && _topic_admin_only)
-        throw UserIsNotAdminException();
+        throw ERR_CHANOPRIVSNEEDED(_name);
     _topic = topic;
 };
 
-void    Channel::editInvite_only(Client *user)
+void    Channel::editInvite_only(Client *user, bool value)
 {
     if (std::find(_Clients.begin(), _Clients.end(), user) == _Clients.end())
-        throw UserNotInChannelException();
+        throw ERR_NOTONCHANNEL(_name);
     if (std::find(_Admins.begin(), _Admins.end(), user) == _Admins.end() && _topic_admin_only)
-        throw UserIsNotAdminException();
-    _invite_only = !_invite_only;
+        throw ERR_CHANOPRIVSNEEDED(_name);
+    _invite_only = value;
 };
 
-void    Channel::editTopic_admin_only(Client *user)
+void    Channel::editTopic_admin_only(Client *user, bool value)
 {
     if (std::find(_Clients.begin(), _Clients.end(), user) == _Clients.end())
-        throw UserNotInChannelException();
+        throw ERR_NOTONCHANNEL(_name);
     if (std::find(_Admins.begin(), _Admins.end(), user) == _Admins.end() && _topic_admin_only)
-        throw UserIsNotAdminException();
-    _topic_admin_only = !_topic_admin_only;
+        throw ERR_CHANOPRIVSNEEDED(_name);
+    _topic_admin_only = value;
 };
 
 void    Channel::set_password(Client *user, std::string password)
 {
     if (std::find(_Clients.begin(), _Clients.end(), user) == _Clients.end())
-        throw UserNotInChannelException();
+        throw ERR_NOTONCHANNEL(_name);
     if (std::find(_Admins.begin(), _Admins.end(), user) == _Admins.end() && _topic_admin_only)
-        throw UserIsNotAdminException();
+        throw ERR_CHANOPRIVSNEEDED(_name);
     _room_password = hash_password(password);
     _room_password_active = true;
 };
@@ -175,45 +209,69 @@ void    Channel::set_password(Client *user, std::string password)
 void    Channel::add_Admin(Client *user, Client *target)
 {
     if (std::find(_Clients.begin(), _Clients.end(), user) == _Clients.end())
-        throw UserNotInChannelException();
+        throw ERR_NOTONCHANNEL(_name);
     if (std::find(_Admins.begin(), _Admins.end(), user) == _Clients.end())
-        throw UserIsNotAdminException();
+        throw ERR_CHANOPRIVSNEEDED(_name);
     if (std::find(_Clients.begin(), _Clients.end(), target) == _Clients.end())
-        throw MemberNotFoundException();
+        throw ERR_NOTONCHANNEL(_name);
     if (std::find(_Admins.begin(), _Admins.end(), target) == _Admins.end())
         _Admins.push_back(target);
 };
 
-void    Channel::editUser_limit(Client *user)
+void    Channel::editUser_limit(Client *user, int value)
 {
     if (std::find(_Clients.begin(), _Clients.end(), user) == _Clients.end())
-        throw UserNotInChannelException();
+        throw ERR_NOTONCHANNEL(_name);
     if (std::find(_Admins.begin(), _Admins.end(), user) == _Admins.end() && _topic_admin_only)
-        throw UserIsNotAdminException();
-    _user_limit = !_user_limit;
+        throw ERR_CHANOPRIVSNEEDED(_name);
+    _user_limit = value;
+};
+
+void    Channel::remove_Admin(Client *user, Client *target)
+{
+    std::vector<Client*>::iterator it;
+    if (std::find(_Clients.begin(), _Clients.end(), user) == _Clients.end())
+        throw ERR_NOTONCHANNEL(_name);
+    if (std::find(_Admins.begin(), _Admins.end(), user) == _Clients.end())
+        throw ERR_CHANOPRIVSNEEDED(_name);
+    if (std::find(_Clients.begin(), _Clients.end(), target) == _Clients.end())
+        throw ERR_NOTONCHANNEL(_name);
+    it = std::find(_Admins.begin(), _Admins.end(), target);
+    if (it != _Admins.end())
+        _Admins.erase(it);
+};
+
+void    Channel::remove_password(Client *user)
+{
+    if (std::find(_Clients.begin(), _Clients.end(), user) == _Clients.end())
+        throw ERR_NOTONCHANNEL(_name);
+    if (std::find(_Admins.begin(), _Admins.end(), user) == _Admins.end() && _topic_admin_only)
+        throw ERR_CHANOPRIVSNEEDED(_name);
+    _room_password_active = false;
 };
 
 void    Channel::broadcast(Client *sender, std::string message)
 {
-    //if (std::find(_Clients.begin(), _Clients.end(), sender) == _Clients.end())
-    //    throw UserNotInChannelException();
+    if (std::find(_Clients.begin(), _Clients.end(), sender) == _Clients.end())
+        throw ERR_NOTONCHANNEL(_name);
     for (std::vector<Client*>::iterator it = _Clients.begin(); it != _Clients.end(); ++it)
     {
-        if (*it != sender)
-            sender->sendMessage(*(*it), message);
+        if (*it != sender && it != _Clients.end())
+            sender->sendMessage((*it), message);
     }
 };
 
 void    Channel::add_Invited(Client *user, Client *target)
 {
+    std::cout << "p";
     if (std::find(_Clients.begin(), _Clients.end(), user) == _Clients.end())
-        throw UserNotInChannelException();
+        throw ERR_NOTONCHANNEL(_name);
     if (std::find(_Admins.begin(), _Admins.end(), user) == _Admins.end() && _invite_only)
-        throw UserIsNotAdminException();
+        throw ERR_CHANOPRIVSNEEDED(_name);
     if (std::find(_Clients.begin(), _Clients.end(), target) != _Clients.end())
-        throw MemberAlreadyHereException();
+        throw ERR_USERONCHANNEL(_name);
     if (std::find(_Invited.begin(), _Invited.end(), target) != _Invited.end())
-        throw UserAlreadyInvitedException();
+        return ;
     _Invited.push_back(target);
 };
 
@@ -232,12 +290,23 @@ std::vector<Client*> Channel::getAdmins()
     return _Admins;
 };
 
+Client *Channel::getClient(std::string user)
+{
+    for (std::vector<Client*>::iterator it = _Clients.begin(); it != _Clients.end(); ++it)
+    {
+        if (*it && (*it)->getNickname() == user)
+            return *it;
+    }
+    throw ERR_NOTONCHANNEL(_name);
+    return NULL;
+}
+
 Client  *Channel::getClients(Client *user)
 {
     std::vector<Client*>::iterator it;
     it = std::find(_Clients.begin(), _Clients.end(), user);
     if (it == _Clients.end())
-        throw MemberNotFoundException();
+        throw ERR_NOTONCHANNEL(_name);
     return (user);
 };
 
@@ -246,51 +315,16 @@ Client  *Channel::getAdmins(Client *user)
     std::vector<Client*>::iterator it;
     it = std::find(_Admins.begin(), _Admins.end(), user);
     if (it == _Admins.end())
-        throw UserIsNotAdminException();
+        throw ERR_CHANOPRIVSNEEDED(_name);
     return (user);
+};
+
+size_t  Channel::getUserLimit()
+{
+    return _user_limit;
 };
 
 bool    Channel::isTopicAdmin()
 {
     return _topic_admin_only;
-};
-
-int Channel::ChannelFullException::errorCode() const
-{
-    return (471);
-};
-
-int Channel::InvalidPasswordException::errorCode() const
-{
-    return (475);
-};
-
-int Channel::MissingInviteException::errorCode() const
-{
-    return (473);
-};
-
-int Channel::MissingAuthorizationException::errorCode() const
-{
-    return (481);
-};
-
-int Channel::MemberNotFoundException::errorCode() const
-{
-    return (401);
-};
-
-int Channel::MemberAlreadyHereException::errorCode() const
-{
-    return (0);
-};
-
-int Channel::UserAlreadyInvitedException::errorCode() const
-{
-    return (0);
-};
-
-int Channel::UserIsNotAdminException::errorCode() const
-{
-    return (0);
 };

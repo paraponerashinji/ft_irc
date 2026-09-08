@@ -1,13 +1,11 @@
-#include "exception.cpp"
-#include "channel.cpp"
-#include "client.cpp"
+#include "../include/exception.hpp"
+#include "../include/channel.hpp"
+#include "../include/client.hpp"
 std::vector<std::string> Server::Parse_Line(std::string text)
 {
     std::stringstream ss(text);
     std::vector<std::string> params;
     std::string word;
-    if (!(ss >> word))
-        return params;
     while (ss >> word)
     {
         if (!word.empty() && word[0] == ':')
@@ -28,15 +26,28 @@ std::vector<std::string> Server::Parse_Line(std::string text)
     return params;
 };
 
+bool    Server::isFullyRegistered(Client *sender)
+{
+    if (sender->getHostname().empty())
+        return false;
+    if (sender->getNickname().empty())
+        return false;
+    if (sender->getUsername().empty())
+        return false;
+    if (!sender->isRegistered())
+        return false;
+    return true;
+};
+
 void    Server::join(Client *sender, std::string text)
 {
     try
     {
         if (!isFullyRegistered(sender))
-            throw ERR_NOTREGISTERED();
+            throw ERR_NOTREGISTERED("");
         std::vector<std::string> params = Parse_Line(text);
         if (params.size() < 1)
-            throw ERR_NEEDMOREPARAMS();
+            throw ERR_NEEDMOREPARAMS("JOIN");
         std::vector<std::string> channels;
         std::istringstream chss(params[0]);
         std::string ch;
@@ -53,25 +64,22 @@ void    Server::join(Client *sender, std::string text)
             while (std::getline(kss, key, ','))
                 keys.push_back(key);
         }
-        for (size_t j = 0; j < channels.size(); ++j)
+        for (size_t j = 0; j < channels.size(); j++)
         {
             if (channels[j].empty())
-                throw ERR_NOSUCHCHANNEL();;
+                throw ERR_NOSUCHCHANNEL("");;
             if (channels[j][0] != '#' && channels[j][0] != '&')
-                throw ERR_NOSUCHCHANNEL();;
+                throw ERR_NOSUCHCHANNEL(channels[j]);;
             channels[j].erase(0, 1);
             try
             {
                 Channel *channel = getChannel(channels[j]);
-                if (j >= keys.size())
-                    keys.push_back(std::string());
-                if (!keys[j].empty() && keys[j][0] == ':')
-                    keys[j].erase(0, 1);
-                if (keys[j].empty())
-                    channel->join(sender);
-                else
+                if (channel == NULL)
+                   throw ERR_NOSUCHCHANNEL(channels[j]);
+                if (j < keys.size() && !keys[j].empty())
                     channel->join(sender, keys[j]);
-
+                else
+                    channel->join(sender);
                 std::ostringstream output;
                 output << "JOIN " << channel->getName();
                 channel->broadcast(sender, output.str());
@@ -80,13 +88,9 @@ void    Server::join(Client *sender, std::string text)
             {
                 if (e.errorCode() == 403)
                 {
-                    if (j < keys.size())
-                        keys.push_back(std::string());
-                    if (!keys[j].empty() && keys[j][0] == ':')
-                        keys[j].erase(0, 1);
-                    if (keys[j].empty())
-                        createChannel(channels[j], *sender);
-                    else
+                    if (keys.empty() || keys[j].empty())
+                        createChannel(channels[j], sender);
+                    //else
                         //createChannel(channels[j], *sender, keys[j]);
                     continue;
                 }
@@ -106,10 +110,10 @@ void    Server::part(Client *sender, std::string text)
     try
     {
         if (!isFullyRegistered(sender))
-            throw ERR_NOTREGISTERED();
+            throw ERR_NOTREGISTERED("");
         std::vector<std::string> params = Parse_Line(text);
         if (params.size() < 1)
-            throw ERR_NEEDMOREPARAMS();
+            throw ERR_NEEDMOREPARAMS("PART");
         std::vector<std::string> channels;
         std::istringstream chss(params[0]);
         std::string ch;
@@ -129,9 +133,9 @@ void    Server::part(Client *sender, std::string text)
         for (size_t j = 0; j < channels.size(); j++)
         {
             if (channels[j][0] != '#' && channels[j][0] != '&')
-                throw ERR_NOSUCHCHANNEL();;
+                throw ERR_NOSUCHCHANNEL(channels[j]);;
             if (channels[j].empty())
-                throw ERR_NOSUCHCHANNEL();;
+                throw ERR_NOSUCHCHANNEL("");;
             channels[j].erase(0, 1);
             Channel *channel = getChannel(channels[j]);
             channel->quit(sender);
@@ -154,10 +158,12 @@ void    Server::privmsg(Client *sender, std::string text)
     try
     {
          if (!isFullyRegistered(sender))
-            throw ERR_NOTREGISTERED();
+            throw ERR_NOTREGISTERED("");
         std::vector<std::string> params = Parse_Line(text);
         if (params.size() < 2)
-            throw ERR_NEEDMOREPARAMS();
+            throw ERR_NEEDMOREPARAMS("PRIVMSG");
+        if (params[1].empty())
+            throw ERR_NOTEXTTOSEND("");
         std::vector<std::string> channels;
         std::istringstream chss(params[0]);
         std::string ch;
@@ -174,7 +180,7 @@ void    Server::privmsg(Client *sender, std::string text)
                 Channel *channel = getChannel(channels[j]);
                 channel->getClients(sender);
                 if (params[1].empty())
-                    throw ERR_NOTEXTTOSEND();
+                    throw ERR_NOTEXTTOSEND("");
                 std::ostringstream output;         
                 output << "PRIVMSG #" << channel->getName() << " " << params[1];
                 channel->broadcast(sender, output.str());
@@ -183,7 +189,7 @@ void    Server::privmsg(Client *sender, std::string text)
             {
                 Client *client = getClientPtr(channels[j]);
                 if (params[1].empty())
-                    throw ERR_NOTEXTTOSEND();
+                    throw ERR_NOTEXTTOSEND("");
                 std::ostringstream output;          
                 output << "PRIVMSG " << client->getNickname() << " " << params[1];
                 sender->sendMessage(client, output.str());
@@ -201,10 +207,10 @@ void    Server::kick(Client *sender, std::string text)
     try
     {
         if (!isFullyRegistered(sender))
-            throw ERR_NOTREGISTERED();
+            throw ERR_NOTREGISTERED("");
         std::vector<std::string> params = Parse_Line(text);
         if (params.size() < 2)
-            throw ERR_NEEDMOREPARAMS();
+            throw ERR_NEEDMOREPARAMS("KICK");
         std::vector<std::string> channels;
         std::istringstream chss(params[0]);
         std::string ch;
@@ -253,19 +259,21 @@ void    Server::invite(Client *sender, std::string text)
     try
     {
         if (!isFullyRegistered(sender))
-            throw ERR_NOTREGISTERED();
+            throw ERR_NOTREGISTERED("");
         std::vector<std::string> params = Parse_Line(text);
         if (params.size() < 2)
-            throw ERR_NEEDMOREPARAMS();
+            throw ERR_NEEDMOREPARAMS("INVITE");
         if (params[0][0] == '#' || params[0][0] == '&')
-            throw ERR_NOSUCHNICK();
+            throw ERR_NOSUCHNICK(params[0]);
         if (params[1][0] != '#' && params[1][0] != '&')
-            throw ERR_NOSUCHCHANNEL();
+            throw ERR_NOSUCHCHANNEL(params[1]);
         params[1].erase(0,1);
         try
         {
             Channel *channel = getChannel(params[1]);
-            Client *target = channel->getClient(params[0]);
+            std::cout << params[0];
+            Client *target = getClientPtr(params[0]);
+            std::cout << "p";
             channel->add_Invited(sender, target);
             std::ostringstream output;
             output << "INVITE " << target->getNickname() << " #" << channel->getName();
@@ -293,12 +301,12 @@ void    Server::topic(Client *sender, std::string text)
     try
     {
         if (!isFullyRegistered(sender))
-            throw ERR_NOTREGISTERED();
+            throw ERR_NOTREGISTERED("");
         std::vector<std::string> params = Parse_Line(text);
         if (params.size() < 2)
-            throw ERR_NEEDMOREPARAMS();
+            throw ERR_NEEDMOREPARAMS("TOPIC");
         if (params[0][0] != '#' && params[0][0] != '&')
-            throw ERR_NOSUCHCHANNEL();
+            throw ERR_NOSUCHCHANNEL(params[0]);
         params[0].erase(0, 1);
         Channel *channel = getChannel(params[0]);
         channel->editTopic(sender, params[1]);
@@ -318,16 +326,16 @@ void    Server::mode(Client *sender, std::string text)
     try
     {
         if (!isFullyRegistered(sender))
-            throw ERR_NOTREGISTERED();
+            throw ERR_NOTREGISTERED("");
         std::vector<std::string> params = Parse_Line(text);
         if (params.size() < 2)
-            throw ERR_NEEDMOREPARAMS();
+            throw ERR_NEEDMOREPARAMS("MODE");
         if (params[0][0] != '#' && params[0][0] != '&')
-            throw ERR_NOSUCHCHANNEL();
+            throw ERR_NOSUCHCHANNEL(params[0]);
         params[0].erase(0, 1);
         Channel *channel = getChannel(params[0]);
         if (params[1][0] != '+' && params[1][0] != '-')
-            throw ERR_UNKNOWNMODE();
+            throw ERR_UNKNOWNMODE(params[1][0]);
         if (params[1][0] == '+')
             make = true;
         params[1].erase(0,1);
@@ -340,12 +348,13 @@ void    Server::mode(Client *sender, std::string text)
             {
                 if (params[1][i] == mode[j])
                     break;
+                j++;
             }
             switch (j)
             {
                 case 0:
                     if (params.size() < k)
-                        throw ERR_NEEDMOREPARAMS();
+                        throw ERR_NEEDMOREPARAMS("MODE");
                     if (make)
                         channel->add_Admin(sender, getClientPtr(params[k]));
                     else
@@ -360,28 +369,28 @@ void    Server::mode(Client *sender, std::string text)
                     break;
                 case 3:
                     if (!make)
-                        channel->remove_password();
+                        channel->remove_password(sender);
                     else
                     {
-                        if (params.size() < k)
-                            throw ERR_NEEDMOREPARAMS();
+                        if (params.size() <= k)
+                            throw ERR_NEEDMOREPARAMS("MODE");
                         channel->set_password(sender, params[k]);
                         k++;
                     }
                     break;
                 case 4:
                     if (params.size() < k || !make)
-                        channel->editUser_limit(sender, make);
-                    else if (params[k].find_first_not_of("0123456789") != std::string::npos)
+                        channel->editUser_limit(sender, 0);
+                    else if (params[k].find_first_not_of("0123456789") == std::string::npos)
                     {
                         channel->editUser_limit(sender, std::stoi(params[k]));
                         k++;
                     }
                     else
-                        channel->editUser_limit(sender, make);
+                        throw   ERR_NEEDMOREPARAMS("MODE");
                     break;
                 default:
-                    throw ERR_UNKNOWNMODE();
+                    throw ERR_UNKNOWNMODE(params[i][0]);
             }
         }
     }

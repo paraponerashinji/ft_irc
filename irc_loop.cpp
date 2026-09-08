@@ -51,7 +51,7 @@ void run_server_loop(Server &server)
                 continue;
             }
 
-            Client new_client(client_fd); // cree un client en attente de PASS
+            Client new_client(&server, client_fd); // cree un client en attente de PASS
             new_client.setHostname(ip);
             pending_clients[client_fd] = new_client;
 
@@ -124,7 +124,7 @@ void run_server_loop(Server &server)
 
                 if (!active_client && client_ptr->isRegistered())
                 {
-                    server.addClient(*client_ptr); // ajoute le client au serveur apres PASS
+                    server.addClient(client_ptr); // ajoute le client au serveur apres PASS
                     //std::cout << "001 :RPL_WELCOME" << std::endl;
                     pending_clients.erase(fds[i].fd);
                 }

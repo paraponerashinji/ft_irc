@@ -1,12 +1,13 @@
 #include "../include/client.hpp"
+#include "../include/exception.hpp"
 #include <iostream>
 #include <sys/socket.h>
 
-Client::Client() : _fd(-1), _nickname(""), _username(""), 
+Client::Client() : _server(NULL), _fd(-1), _nickname(""), _username(""), 
                    _realname(""), _hostname(""), _buffer(""), 
                    _is_registered(false) {}
 
-Client::Client(int fd) : _fd(fd), _nickname(""), _username(""), 
+Client::Client(Server *server, int fd) : _server(server), _fd(fd), _nickname(""), _username(""), 
                          _realname(""), _hostname(""), _buffer(""), 
                          _is_registered(false) {}
 
@@ -71,19 +72,25 @@ void Client::clearBuffer()
 }
 
 // ============ MESSAGE ============
-/*
+
 void    Client::sendMessage(Client *receiver, std::string msg)
 {
-    std::string to_send = "::";
+    if (!receiver || receiver->getFd() < 0 || msg.empty())
+        return;
+    if (msg.size() != 0 && msg[msg.size() - 1] != '\n')
+        msg += "\r\n";
+    
+    std::string to_send = ":";
     to_send.append(getNickname());
-    to_send.accumule("!");
+    to_send.append("!");
     to_send.append(getUsername());
     to_send.append("@");
     to_send.append(getHostname());
     to_send.append(" ");
     to_send.append(msg);
-    _server->sendMessage(receiver, to_send);
-};*/
+    _server->sendMessage(*receiver, to_send);
+};
+/*
 void Client::sendMessage(Client *receiver, std::string msg)
 {
     if (!receiver || receiver->getFd() < 0 || msg.empty())
@@ -92,4 +99,4 @@ void Client::sendMessage(Client *receiver, std::string msg)
     if (msg[msg.size() - 1] != '\n')
         msg += "\r\n";
     ::send(receiver->getFd(), msg.c_str(), msg.size(), 0);
-}
+}*/
