@@ -4,7 +4,36 @@
     channel->broadcast(sender, msg);
 }*/
 
-#include "../include/server.hpp"
+#include "../server.hpp"
+
+void Server::Pass(Client* client, const std::vector<std::string>& params) {
+    // 1. Vérifier si le client est déjà enregistré (ERR_ALREADYREGISTRED - 462)
+    if (client->isRegistered()) {
+        throw ERR_ALREADYREGISTRED(":You may not reregister");
+        //sendError(client, "462", "ERR_ALREADYREGISTRED", ":Unauthorized command expected. Already registered");
+        return;
+    }
+
+    // 2. Vérifier si l'argument du mot de passe est présent (ERR_NEEDMOREPARAMS - 461)
+    if (params.empty() || params[0].empty()) {
+        throw ERR_NEEDMOREPARAMS("<command> :Not enough parameters");
+        //sendError(client, "461", "ERR_NEEDMOREPARAMS", "PASS :Not enough parameters");
+        return;
+    }
+
+    // 3. Vérifier si le mot de passe fourni correspond à celui du serveur (ERR_PASSWDMISMATCH - 464)
+    if (params[0] != _serverPassword) {
+        sendError(client, "464", "ERR_PASSWDMISMATCH", ":Password incorrect");
+        
+        // Optionnel mais recommandé : déconnecter immédiatement le client s'il se trompe de MDP
+        client->setShouldDisconnect(true);
+        // TODO : ENLEVER LE NOUVEAU CLIENT DE "PENDING_CLIENTS"
+        return;
+    }
+
+    // 4. Valider le mot de passe pour ce client
+    client->setHasPassed(true);
+}
 
 static bool Server::isValidNickname(const std::string& nick) {
     if (nick.empty() || nick.length() > 9) // RFC fixe la limite à 9 car (souvent assouplie à 18)
@@ -49,7 +78,7 @@ static void Server::broadcastToCommonChannels(Client* client, const std::string&
 void Server::Nick(Client* client, const std::vector<std::string>& params) {
     // 1. Vérification des arguments (ERR_NONICKNAMEGIVEN - 431)
     if (params.empty() || params[0].empty()) {
-        throw ERR_NONICKNAMEGIVEN();
+        throw ERR_NONICKNAMEGIVEN(":No nickname given");
         //sendError(client, "431", "ERR_NONICKNAMEGIVEN", ":No nickname given");
         return;
     }
@@ -58,7 +87,7 @@ void Server::Nick(Client* client, const std::vector<std::string>& params) {
 
     // 2. Validation de la syntaxe du pseudo (ERR_ERRONEUSNICKNAME - 432)
     if (!isValidNickname(newNick)) {
-        throw ERR_ERRONEUSNICKNAME();
+        throw ERR_ERRONEUSNICKNAME("<nick> :Errorneus nickname");
         //sendError(client, "432", "ERR_ERRONEUSNICKNAME", newNick + " :Erroneous nickname");
         return;
     }
@@ -66,7 +95,7 @@ void Server::Nick(Client* client, const std::vector<std::string>& params) {
     // 3. Vérification de la disponibilité (ERR_NICKNAMEINUSE - 433)
     Client* existingClient = getClientByNick(newNick);
     if (existingClient && existingClient != client) {
-        throw ERR_NICKNAMEINUSE();
+        throw ERR_NICKNAMEINUSE("<nick> :Nickname is already in use");
         //sendError(client, "433", "ERR_NICKNAMEINUSE", newNick + " :Nickname is already in use");
         return;
     }
@@ -74,7 +103,7 @@ void Server::Nick(Client* client, const std::vector<std::string>& params) {
     // 4. Cas N°1 : Changement de pseudo une fois DÉJÀ enregistré
     if (client->isRegistered()) {
         if (existingClient !+ client) {
-            throw ERR_NICKCOLLISION();
+            throw ERR_NICKCOLLISION("<nick> :Nickname collision KILL");
             return;
         }
         std::string oldPrefix = client->getPrefix(); // ":old_nick!user@host"
@@ -118,7 +147,7 @@ static void Server::checkRegistration(Client* client) {
 void Server::User(Client* client, const std::vector<std::string>& params) {
     // 1. Vérifier si le client est déjà enregistré (ERR_ALREADYREGISTRED - 462)
     if (client->isRegistered()) {
-        throw ERR_ALREADYREGISTRED();
+        throw ERR_ALREADYREGISTRED(":You may not reregister");
         //sendError(client, "462", "ERR_ALREADYREGISTRED", ":Unauthorized command expected. Already registered");
         return;
     }
@@ -126,7 +155,7 @@ void Server::User(Client* client, const std::vector<std::string>& params) {
     // 2. Vérifier le nombre d'arguments (ERR_NEEDMOREPARAMS - 461)
     // USER prend 4 paramètres : <username> <hostname> <servername> :<realname>
     if (params.size() < 4) {
-        throw ERR_NEEDMOREPARAMS();
+        throw ERR_NEEDMOREPARAMS("<command> :Not enough parameters");
         //sendError(client, "461", "ERR_NEEDMOREPARAMS", "USER :Not enough parameters");
         return;
     }

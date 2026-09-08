@@ -3,7 +3,29 @@
 #include <cstdio>
 #include <map>
 
-void run_server_loop(Server &server)
+void Server::executeCommand(Client* client, const std::string& rawLine) {
+    std::vector<std::string> tokens = parseCommand(rawLine);
+    if (tokens.empty())
+        return;
+
+    std::string cmdName = tokens[0];
+    for (size_t i = 0; i < cmdName.length(); ++i)
+        cmdName[i] = std::toupper(cmdName[i]);
+
+    std::vector<std::string> params(tokens.begin() + 1, tokens.end());
+
+    std::map<std::string, CommandHandler>::iterator it = _commandMap.find(cmdName);
+
+    if (it != _commandMap.end()) {
+        CommandHandler handler = it->second;
+        (this->*handler)(client, params);
+    }
+    else {
+        throw ERR_UNKNOWNCOMMAND();
+    }
+}
+
+void Server::run_server_loop(Server &server)
 {
     std::vector<struct pollfd> fds; // liste des sockets a surveiller
     std::map<int, Client> pending_clients;
@@ -120,6 +142,7 @@ void run_server_loop(Server &server)
                 std::string line = client_ptr->getBuffer().substr(0, pos); // extrait une ligne complete IRC
                 std::string remaining = client_ptr->getBuffer().substr(pos + 2); // garde le reste du buffer
                 client_ptr->setBuffer(remaining); // remplace le buffer sans la ligne traitee
+<<<<<<< HEAD
                 server.receiveMessage(*client_ptr, line); // envoie la commande au serveur pour traitement
 
                 if (!active_client && client_ptr->isRegistered())
@@ -127,10 +150,15 @@ void run_server_loop(Server &server)
                     server.addClient(client_ptr); // ajoute le client au serveur apres PASS
                     //std::cout << "001 :RPL_WELCOME" << std::endl;
                     pending_clients.erase(fds[i].fd);
+=======
+                while (server.receiveMessage(*client_ptr, line)) { // envoie la commande au serveur pour traitement
+                    executeCommand(client_ptr, line);
+>>>>>>> ac65b81 (presdubut)
                 }
 
                 if (remaining.empty())
                     break;
+                cleanDisconnectedClients();
             }
         }
     }
