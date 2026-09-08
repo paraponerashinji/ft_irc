@@ -66,8 +66,8 @@ void    Channel::join(Client *user)
 {
     if (std::find(_Clients.begin(), _Clients.end(), user) != _Clients.end())
     {
-        std::string t(user.getNickname()):
-        t.append(" ")
+        std::string t(user->getNickname());
+        t.append(" ");
         t.append(_name);
         throw ERR_USERONCHANNEL(t);
     }
@@ -105,8 +105,8 @@ void    Channel::join(Client *user, std::string password)
 {
     if (std::find(_Clients.begin(), _Clients.end(), user) != _Clients.end())
     {
-        std::string t(user.getNickname()):
-        t.append(" ")
+        std::string t(user->getNickname());
+        t.append(" ");
         t.append(_name);
         throw ERR_USERONCHANNEL(t);
     }

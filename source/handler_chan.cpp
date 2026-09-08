@@ -335,7 +335,7 @@ void    Server::mode(Client *sender, std::string text)
         params[0].erase(0, 1);
         Channel *channel = getChannel(params[0]);
         if (params[1][0] != '+' && params[1][0] != '-')
-            throw ERR_UNKNOWNMODE(params[1][0]);
+            throw ERR_UNKNOWNMODE(std::string(1, params[1][0]));
         if (params[1][0] == '+')
             make = true;
         params[1].erase(0,1);
@@ -390,7 +390,7 @@ void    Server::mode(Client *sender, std::string text)
                         throw   ERR_NEEDMOREPARAMS("MODE");
                     break;
                 default:
-                    throw ERR_UNKNOWNMODE(params[i][0]);
+                    throw ERR_UNKNOWNMODE(std::string(1, params[i][0]));
             }
         }
     }
