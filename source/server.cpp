@@ -3,12 +3,33 @@
 #include "message.hpp"
 #include "channel.hpp"
 
-Server::Server() {
-    _password = "";
-    _serverFd = -1;
+Server::Server() _password(password), _serverFd(server_fd) {
+    _commandMap["PASS"] = &Server::Pass;
+    _commandMap["NICK"] = &Server::Nick;
+    _commandMap["USER"] = &Server::User;
+    _commandMap["QUIT"] = &Server::Quit;
+    _commandMap["JOIN"] = &Server::join;
+    _commandMap["PART"] = &Server::part;
+    _commandMap["PRIVMSG"] = &Server::privmsg;
+    _commandMap["KICK"] = &Server::kick;
+    _commandMap["INVITE"] = &Server::invite;
+    _commandMap["TOPIC"] = &Server::topic;
+    _commandMap["MODE"] = &Server::mode;
 }
 
-Server::Server(std::string password, int server_fd) : _password(password), _serverFd(server_fd) {}
+Server::Server(std::string password, int server_fd) : _password(password), _serverFd(server_fd) {
+    _commandMap["PASS"] = &Server::Pass;
+    _commandMap["NICK"] = &Server::Nick;
+    _commandMap["USER"] = &Server::User;
+    _commandMap["QUIT"] = &Server::Quit;
+    _commandMap["JOIN"] = &Server::join;
+    _commandMap["PART"] = &Server::part;
+    _commandMap["PRIVMSG"] = &Server::privmsg;
+    _commandMap["KICK"] = &Server::kick;
+    _commandMap["INVITE"] = &Server::invite;
+    _commandMap["TOPIC"] = &Server::topic;
+    _commandMap["MODE"] = &Server::mode;
+}
 
 Server::~Server() {
     for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
@@ -256,6 +277,27 @@ void    Server::ircERROR(Client *user, int code)
     (void)user;
     (void)code;
 };
+
+void Server::cleanDisconnectedClients() {
+    for (size_t i = 0; i < _clients.size(); ++i) {
+        if (_clients[i]->shouldDisconnect()) {
+            int fd = _clients[i]->getFd();
+            
+            // Fermer le socket
+            close(fd);
+            
+            // Supprimer le fd du tableau pollfd
+            removeFromPollFds(fd);
+            
+            // Libérer la mémoire
+            delete _clients[i];
+            _clients.erase(_clients.begin() + i);
+            --i;
+        }
+    }
+}
+
+
 /*
 void Server::receiveMessage(Client &sender, std::string message)
 {

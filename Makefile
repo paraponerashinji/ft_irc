@@ -1,6 +1,6 @@
 SRCS = socket.cpp \
 	   server.cpp \
-	   source/message.cpp \
+	   source/handler_chan.cpp \
 	   source/channel.cpp \
 	   source/client.cpp \
 	   main.cpp \

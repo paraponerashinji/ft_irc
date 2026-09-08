@@ -68,6 +68,9 @@ class   Server {
     std::vector<Channel*>    _channels;
     std::string             _password;
     int                     _serverFd;
+    
+    typedef void (Server::*CommandHandler)(Client* client, const std::vector<std::string>& params);
+    std::map<std::string, CommandHandler> _commandMap;
 
     public:
 
@@ -99,7 +102,17 @@ class   Server {
     void    ircERROR(Client *user, int code);
     bool    isFullyRegistered(Client *sender);
     // HANDLERS
+<<<<<<< HEAD
+<<<<<<< HEAD
     std::vector<std::string> Parse_Line(std::string text);
+=======
+=======
+    void    Pass(Client* client, const std::vector<std::string>& params);
+>>>>>>> ac65b81 (presdubut)
+    void    Nick(Client* client, const std::vector<std::string>& params);
+    void    User(Client* client, const std::vector<std::string>& params);
+    void    Quit(Client* client, const std::vector<std::string>& params);
+>>>>>>> 6237f41 (little modif + handler)
     void    join(Client *sender, std::string text);
     void    part(Client *sender, std::string text);
     void    privmsg(Client *sender, std::string text);
@@ -107,6 +120,10 @@ class   Server {
     void    invite(Client *sender, std::string text);
     void    topic(Client *sender, std::string text);
     void    mode(Client *sender, std::string text);
+
+    void    executeCommand(Client* client, const std::string& rawLine);
+    void    run_server_loop(Server &server);
+    //void Server::cleanDisconnectedClients();
 };
 
 void    petit_test(int port);

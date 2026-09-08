@@ -26,6 +26,10 @@ std::string Client::getHostname() const { return _hostname; }
 
 std::string Client::getBuffer() const { return _buffer; }
 
+std::string Client::getPrefix() const {
+    return _nickname + "!" + _username + "@" + _hostname;
+}
+
 bool Client::isRegistered() const { return _is_registered; }
 
 std::vector<std::string> Client::getChannels() const { return _channels; }
