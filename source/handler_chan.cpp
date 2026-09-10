@@ -1,12 +1,7 @@
-<<<<<<< HEAD
 #include "../include/exception.hpp"
 #include "../include/channel.hpp"
 #include "../include/client.hpp"
-=======
-#include "../server.hpp"
-#include "../include/exception.hpp"
-
->>>>>>> ac65b81 (presdubut)
+#include <string>
 std::vector<std::string> Server::Parse_Line(std::string text)
 {
     std::stringstream ss(text);
@@ -32,6 +27,23 @@ std::vector<std::string> Server::Parse_Line(std::string text)
     return params;
 };
 
+int stoi98(const std::string& str)
+{
+    char* end;
+    long value = std::strtol(str.c_str(), &end, 10);
+
+    if (end == str.c_str())
+        throw std::invalid_argument("invalid integer");
+
+    if (*end != '\0')
+        throw std::invalid_argument("invalid integer");
+
+    if (value < -2147483648L || value > 2147483647L)
+        throw std::out_of_range("integer out of range");
+
+    return static_cast<int>(value);
+}
+
 bool    Server::isFullyRegistered(Client *sender)
 {
     if (sender->getHostname().empty())
@@ -44,7 +56,6 @@ bool    Server::isFullyRegistered(Client *sender)
         return false;
     return true;
 };
-
 void    Server::join(Client *sender, std::string text)
 {
     try
@@ -389,7 +400,7 @@ void    Server::mode(Client *sender, std::string text)
                         channel->editUser_limit(sender, 0);
                     else if (params[k].find_first_not_of("0123456789") == std::string::npos)
                     {
-                        channel->editUser_limit(sender, std::stoi(params[k]));
+                        channel->editUser_limit(sender, stoi98(params[k]));
                         k++;
                     }
                     else

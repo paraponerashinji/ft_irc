@@ -4,8 +4,10 @@
     channel->broadcast(sender, msg);
 }*/
 
-#include "../server.hpp"
-
+#include "../include/server.hpp"
+#include "../include/client.hpp"
+#include "../include/exception.hpp"
+#include "../include/channel.hpp"
 void Server::Pass(Client* client, const std::vector<std::string>& params) {
     // 1. Vérifier si le client est déjà enregistré (ERR_ALREADYREGISTRED - 462)
     if (client->isRegistered()) {
@@ -22,8 +24,8 @@ void Server::Pass(Client* client, const std::vector<std::string>& params) {
     }
 
     // 3. Vérifier si le mot de passe fourni correspond à celui du serveur (ERR_PASSWDMISMATCH - 464)
-    if (params[0] != _serverPassword) {
-        sendError(client, "464", "ERR_PASSWDMISMATCH", ":Password incorrect");
+    if (params[0] != _password) {
+        throw ERR_PASSWDMISMATCH("");
         
         // Optionnel mais recommandé : déconnecter immédiatement le client s'il se trompe de MDP
         client->setShouldDisconnect(true);
