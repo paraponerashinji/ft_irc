@@ -139,6 +139,16 @@ void Server::createChannel(std::string name, Client creator) {
     _channels.push_back(new_channel);
 }
 
+void Server::createChannel(std::string name, Client creator, std::string password) {
+    for (std::vector<Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it) {
+        if (it->getName() == name)
+            return;
+    }
+
+    Channel new_channel(this, name, password, creator);
+    _channels.push_back(new_channel);
+}
+
 void Server::sendMessage(Client &c, std::string message) {
     if (message.empty() || c.getFd() < 0)
         return;
