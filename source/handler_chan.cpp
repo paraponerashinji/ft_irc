@@ -27,11 +27,6 @@ std::vector<std::string> Server::Parse_Line(std::string text)
     return params;
 };
 
-void    Server::send_Error(Client *user, std::string text)
-{
-    (void)user;(void)text;
-};
-
 int stoi98(const std::string& str)
 {
     char* end;
@@ -162,7 +157,7 @@ void    Server::part(Client *sender, std::string text)
     }
     catch (IrcException &e)
     {
-        ircERROR(sender, e.errorCode());
+        sendError(sender, e.what());
     }
 };
 
@@ -223,7 +218,7 @@ void    Server::privmsg(Client *sender, std::string text)
     }
     catch (IrcException &e)
     {
-        ircERROR(sender, e.errorCode());
+        sendError(sender, e.what());
     }
 };
 
@@ -277,7 +272,7 @@ void    Server::kick(Client *sender, std::string text)
     }
     catch (IrcException &e)
     {
-        ircERROR(sender, e.errorCode());
+        sendError(sender, e.what());
     }
 };
 
@@ -318,7 +313,7 @@ void    Server::invite(Client *sender, std::string text)
     }
     catch (IrcException &e)
     {
-        ircERROR(sender, e.errorCode());
+        sendError(sender, e.what());
     }
 };
 
@@ -341,7 +336,7 @@ void    Server::topic(Client *sender, std::string text)
     }
     catch (IrcException &e)
     {
-        ircERROR(sender, e.errorCode());
+        sendError(sender, e.what());
     }
 };
 
@@ -425,6 +420,6 @@ void    Server::mode(Client *sender, std::string text)
     }
     catch (IrcException &e)
     {
-        ircERROR(sender, e.errorCode());
+        sendError(sender, e.what());
     }
 };

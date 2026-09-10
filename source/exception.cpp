@@ -1,8 +1,11 @@
 #include "../include/exception.hpp"
 
-void    Server::ircERROR(Client *user, std::string text)
+void    Server::sendError(Client *user, std::string text)
 {
-    sendMessage(user, text);
+    std::ostringstream oss;
+    oss << ":localhost " << text;
+    message = oss.str();
+    sendMessage(user, message);
 };
 
 IrcException::IrcException()

@@ -99,7 +99,6 @@ class   Server {
     void    createChannel(std::string name, std::string password, Client *creator);
     void    sendMessage(Client &c, std::string message);
     void    receiveMessage(Client &c, std::string message);
-    void    ircERROR(Client *user, int code);
     bool    isFullyRegistered(Client *sender);
     // HANDLERS
     std::vector<std::string> Parse_Line(std::string text);
@@ -120,7 +119,7 @@ class   Server {
     void    run_server_loop(Server &server);
     void    cleanDisconnectedClients();
 
-    void    send_Error(Client *user, std::string text);
+    void    sendError(Client *user, std::string text);
 };
 
 void    petit_test(int port);
