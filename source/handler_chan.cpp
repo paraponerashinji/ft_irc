@@ -1,12 +1,6 @@
-<<<<<<< HEAD
 #include "../include/exception.hpp"
 #include "../include/channel.hpp"
 #include "../include/client.hpp"
-=======
-#include "../server.hpp"
-#include "../include/exception.hpp"
-
->>>>>>> ac65b81 (presdubut)
 std::vector<std::string> Server::Parse_Line(std::string text)
 {
     std::stringstream ss(text);
