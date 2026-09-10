@@ -116,6 +116,9 @@ class   Server {
     void    mode(Client *sender, std::string text);
 
     std::vector<std::string> parseCommand(std::string line);
+    bool    isValidNickname(const std::string& nick);
+    void    broadcastToCommonChannels(Client* client, const std::string& message);
+    //void    checkRegistration(Client* client);
     void    executeCommand(Client* client, const std::string& rawLine);
     void    run_server_loop(Server &server);
     void    cleanDisconnectedClients();

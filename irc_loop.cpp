@@ -33,6 +33,12 @@ void Server::executeCommand(Client* client, const std::string& rawLine) {
     else {
         throw ERR_UNKNOWNCOMMAND(cmdName);
     }
+    /*try
+    {
+
+    }
+    catch (IrcException &e)
+        sendError(client, e.what())*/
 }
 
 void Server::run_server_loop(Server &server)
@@ -156,7 +162,7 @@ void Server::run_server_loop(Server &server)
                 executeCommand(client_ptr, line);
                 if (remaining.empty())
                     break;
-                cleanDisconnectedClients();
+                //cleanDisconnectedClients();
             }
         }
     }
