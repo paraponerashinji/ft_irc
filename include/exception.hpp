@@ -1,6 +1,7 @@
 #ifndef EXCEPTION_HPP
 #define EXCEPTION_HPP
 #include <string>
+#include <exception>
 #include <vector>
 #include <sstream>
 #include <algorithm>
@@ -9,6 +10,7 @@
 class IrcException: public std::exception
 {
     public:
+        virtual ~IrcException() throw() {};
         virtual int errorCode() const = 0;
         std::string target;
         IrcException(const std::string &target);

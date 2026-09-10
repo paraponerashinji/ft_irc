@@ -1,8 +1,18 @@
 #include "server.hpp"
 #include "./include/client.hpp"
+#include "./include/exception.hpp"
 #include <cstdio>
 #include <map>
 
+std::vector<std::string> Server::parseCommand(std::string line)
+{
+    std::stringstream ss(line);
+    std::vector<std::string> params;
+    std::string word;
+    while (ss >> word)
+        params.push_back(word);
+    return params;
+}
 void Server::executeCommand(Client* client, const std::string& rawLine) {
     std::vector<std::string> tokens = parseCommand(rawLine);
     if (tokens.empty())
@@ -21,7 +31,7 @@ void Server::executeCommand(Client* client, const std::string& rawLine) {
         (this->*handler)(client, params);
     }
     else {
-        throw ERR_UNKNOWNCOMMAND();
+        throw ERR_UNKNOWNCOMMAND(cmdName);
     }
 }
 
@@ -142,20 +152,8 @@ void Server::run_server_loop(Server &server)
                 std::string line = client_ptr->getBuffer().substr(0, pos); // extrait une ligne complete IRC
                 std::string remaining = client_ptr->getBuffer().substr(pos + 2); // garde le reste du buffer
                 client_ptr->setBuffer(remaining); // remplace le buffer sans la ligne traitee
-<<<<<<< HEAD
-                server.receiveMessage(*client_ptr, line); // envoie la commande au serveur pour traitement
-
-                if (!active_client && client_ptr->isRegistered())
-                {
-                    server.addClient(client_ptr); // ajoute le client au serveur apres PASS
-                    //std::cout << "001 :RPL_WELCOME" << std::endl;
-                    pending_clients.erase(fds[i].fd);
-=======
-                while (server.receiveMessage(*client_ptr, line)) { // envoie la commande au serveur pour traitement
-                    executeCommand(client_ptr, line);
->>>>>>> ac65b81 (presdubut)
-                }
-
+                // envoie la commande au serveur pour traitement
+                executeCommand(client_ptr, line);
                 if (remaining.empty())
                     break;
                 cleanDisconnectedClients();

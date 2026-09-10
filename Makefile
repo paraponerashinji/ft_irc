@@ -1,10 +1,11 @@
 SRCS = socket.cpp \
 	   server.cpp \
 	   source/handler_chan.cpp \
+	   source/handler_serv.cpp \
 	   source/channel.cpp \
 	   source/client.cpp \
 	   main.cpp \
-	   irc_loop.cpp
+	   irc_loop.cpp 
 
 OBJS = $(SRCS:.cpp=.o)
 NAME = IRC
