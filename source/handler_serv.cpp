@@ -28,16 +28,16 @@ void Server::Pass(Client* client, const std::vector<std::string>& params) {
         throw ERR_PASSWDMISMATCH("");
         
         // Optionnel mais recommandé : déconnecter immédiatement le client s'il se trompe de MDP
-        client->setShouldDisconnect(true);
+        //client->setShouldDisconnect(true)
         // TODO : ENLEVER LE NOUVEAU CLIENT DE "PENDING_CLIENTS"
         return;
     }
 
     // 4. Valider le mot de passe pour ce client
-    client->setHasPassed(true);
+    client->setRegistered(true);
 }
 
-static bool Server::isValidNickname(const std::string& nick) {
+bool Server::isValidNickname(const std::string& nick) {
     if (nick.empty() || nick.length() > 9) // RFC fixe la limite à 9 car (souvent assouplie à 18)
         return false;
     
@@ -55,14 +55,16 @@ static bool Server::isValidNickname(const std::string& nick) {
     return true;
 }
 
-static void Server::broadcastToCommonChannels(Client* client, const std::string& message) {
+void Server::broadcastToCommonChannels(Client* client, const std::string& message) {
     std::set<Client*> notifiedClients;
+    const std::vector<std::string>& clientChanNames = client->getChannels();
 
     // Parcourt tous les canaux de l'utilisateur
-    for (size_t i = 0; i < _channels.size(); ++i) {
-        if (_channels[i]->hasMember(client)) {
+    for (size_t i = 0; i < clientChanNames.size(); ++i) {
+        Channel* chan = getChannel(clientChanNames[i]);
+        if (chan) { // _channels[i]   _channels[i]->hasMember(client)) {
             // Récupère les membres du canal
-            std::vector<Client*> members = _channels[i]->getMembers();
+            const std::vector<Client*>& members = chan->getClients();
             for (size_t j = 0; j < members.size(); ++j) {
                 if (members[j] != client) {
                     notifiedClients.insert(members[j]); // Évite les doublons avec std::set
@@ -95,7 +97,7 @@ void Server::Nick(Client* client, const std::vector<std::string>& params) {
     }
 
     // 3. Vérification de la disponibilité (ERR_NICKNAMEINUSE - 433)
-    Client* existingClient = getClientByNick(newNick);
+    Client* existingClient = &getClientRef(newNick);
     if (existingClient && existingClient != client) {
         throw ERR_NICKNAMEINUSE("<nick> :Nickname is already in use");
         //sendError(client, "433", "ERR_NICKNAMEINUSE", newNick + " :Nickname is already in use");
@@ -104,7 +106,7 @@ void Server::Nick(Client* client, const std::vector<std::string>& params) {
 
     // 4. Cas N°1 : Changement de pseudo une fois DÉJÀ enregistré
     if (client->isRegistered()) {
-        if (existingClient !+ client) {
+        if (existingClient != client) {
             throw ERR_NICKCOLLISION("<nick> :Nickname collision KILL");
             return;
         }
@@ -124,12 +126,12 @@ void Server::Nick(Client* client, const std::vector<std::string>& params) {
         client->setNickname(newNick);
         
         // Tenter de finaliser l'enregistrement si PASS et USER sont déjà reçus
-        checkRegistration(client);
+        //checkRegistration(client);
     }
 }
 
 
-static void Server::checkRegistration(Client* client) {
+/*void Server::checkRegistration(Client* client) {
     // Si PASS est valide + NICK défini + USER défini + PAS ENCORE ENREGISTRÉ
     if (client->hasPassed() && !client->getNickname().empty() && client->hasUser() && !client->isRegistered()) {
         
@@ -144,7 +146,7 @@ static void Server::checkRegistration(Client* client) {
         
         // (Optionnel) Tu peux aussi envoyer RPL_YOURHOST (002), RPL_CREATED (003), RPL_MYINFO (004)
     }
-}
+}*/
 
 void Server::User(Client* client, const std::vector<std::string>& params) {
     // 1. Vérifier si le client est déjà enregistré (ERR_ALREADYREGISTRED - 462)
@@ -168,8 +170,8 @@ void Server::User(Client* client, const std::vector<std::string>& params) {
     client->setRealname(params[3]);
 
     // 4. Marquer le flag USER comme reçu et tenter de finaliser l'enregistrement
-    client->setHasUser(true);
-    checkRegistration(client);
+    //client->setHasUser(true);
+    //checkRegistration(client);
 }
 
 
@@ -189,25 +191,26 @@ void Server::Quit(Client* client, const std::vector<std::string>& params) {
     // 3. Informer tous les utilisateurs qui partagent un canal avec le client déconnecté
     broadcastToCommonChannels(client, quitMsg);
 
+    const std::vector<std::string>& clientChanNames = client->getChannels();
     // 4. Retirer le client de tous ses canaux
-    for (size_t i = 0; i < _channels.size(); ++i) {
-        if (_channels[i]->hasMember(client)) {
-            _channels[i]->removeMember(client);
-            
+    for (size_t i = 0; i < clientChanNames.size(); ++i) {
+        Channel* chan = getChannel(clientChanNames[i]);
+        if (chan) {
+            _channels[i]->quit(client);            
             // Si le canal est vide après son départ, on peut le supprimer
-            if (_channels[i]->isEmpty()) {
+            /*if (_channels[i]->size() == 0) {
                 delete _channels[i];
                 _channels.erase(_channels.begin() + i);
                 --i; // Ajuster l'index après la suppression
-            }
+            }*/
         }
     }
 
     // 5. Marquer le client comme "à déconnecter" pour le nettoyer dans la boucle principale
-    client->setShouldDisconnect(true);
+    //client->setShouldDisconnect(true);
 }
 
-void Server::cleanDisconnectedClients() {
+/*void Server::cleanDisconnectedClients() {
     for (size_t i = 0; i < _clients.size(); ++i) {
         if (_clients[i]->shouldDisconnect()) {
             int fd = _clients[i]->getFd();
@@ -224,4 +227,4 @@ void Server::cleanDisconnectedClients() {
             --i;
         }
     }
-}
+}*/
