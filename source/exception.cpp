@@ -5,8 +5,8 @@ void    Server::ircERROR(Client *user, std::string text)
     sendMessage(user, text);
 };
 
-IrcException::IrcException(Client *User, const std::string &target) : target(target) {
-    (void)User;
+IrcException::IrcException()
+{
 }
 
 const char* IrcException::what() const throw()
@@ -197,5 +197,12 @@ ERR_CHANOPRIVSNEEDED::ERR_CHANOPRIVSNEEDED(Client *User, const std::string &targ
 {
     std::ostringstream oss;
     oss << errorCode() << " " << User->getNickname() << " " << target << " :You're not channel operator";
+    message = oss.str();
+};
+
+ERR_BADCHANMASK::ERR_BADCHANMASK(Client *User, const std::string &target): IrcException()
+{
+    std::ostringstream oss;
+    oss << errorCode() << " " << User->getNickname() << " " << target << " :Bad Channel Mask";
     message = oss.str();
 };

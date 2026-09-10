@@ -75,7 +75,6 @@ Channel *Server::getChannel(std::string name) {
         if ((*it)->getName() == name)
             return &*(*it);
     }
-    throw   ERR_NOSUCHCHANNEL(name);
     return NULL;
 }
 
@@ -113,6 +112,16 @@ void Server::createChannel(std::string name, Client *creator) {
     }
 
     Channel *new_channel = new Channel(this, name, creator);
+    _channels.push_back(new_channel);
+}
+
+void Server::createChannel(std::string name, std::string password, Client *creator) {
+    for (std::vector<Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it) {
+        if ((*it)->getName() == name)
+            return;
+    }
+
+    Channel *new_channel = new Channel(this, name, password, creator);
     _channels.push_back(new_channel);
 }
 
