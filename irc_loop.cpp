@@ -31,7 +31,7 @@ void Server::executeCommand(Client* client, const std::string& rawLine) {
         (this->*handler)(client, params);
     }
     else {
-        throw ERR_UNKNOWNCOMMAND(cmdName);
+        throw ERR_UNKNOWNCOMMAND(client, cmdName);
     }
     /*try
     {

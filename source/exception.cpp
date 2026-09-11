@@ -4,8 +4,9 @@ void    Server::sendError(Client *user, std::string text)
 {
     std::ostringstream oss;
     oss << ":localhost " << text;
+    std::string message;
     message = oss.str();
-    sendMessage(user, message);
+    sendMessage(*user, message);
 };
 
 IrcException::IrcException()
@@ -16,7 +17,7 @@ const char* IrcException::what() const throw()
 {
     if (message.empty())
         return "Unknown Error";
-    return message;
+    return message.c_str();
 }
 
 int ERR_NOSUCHNICK::errorCode() const { return 401; }
@@ -41,6 +42,7 @@ int ERR_CHANNELISFULL::errorCode() const { return 471; }
 int ERR_UNKNOWNMODE::errorCode() const { return 472; }
 int ERR_INVITEONLYCHAN::errorCode() const { return 473; }
 int ERR_BADCHANNELKEY::errorCode() const { return 475; }
+int ERR_BADCHANMASK::errorCode() const { return 476; }
 int ERR_CHANOPRIVSNEEDED::errorCode() const { return 482; }
 
 ERR_NOSUCHNICK::ERR_NOSUCHNICK(Client *User, const std::string &target): IrcException()
@@ -65,6 +67,7 @@ ERR_TOOMANYTARGETS::ERR_TOOMANYTARGETS(Client *User, const std::string &target):
 
 ERR_NOTEXTTOSEND::ERR_NOTEXTTOSEND(Client *User, const std::string &target): IrcException()
 {
+    (void)target;
     std::ostringstream oss;
     oss << errorCode() << " " << User->getNickname() << " :No text to send";
     message = oss.str();
@@ -79,6 +82,7 @@ ERR_UNKNOWNCOMMAND::ERR_UNKNOWNCOMMAND(Client *User, const std::string &target):
 
 ERR_NONICKNAMEGIVEN::ERR_NONICKNAMEGIVEN(Client *User, const std::string &target): IrcException()
 {
+    (void)target;
     std::ostringstream oss;
     oss << errorCode() << " " << User->getNickname() << " :No nickname given";
     message = oss.str();
@@ -122,12 +126,13 @@ ERR_NOTONCHANNEL::ERR_NOTONCHANNEL(Client *User, const std::string &target): Irc
 ERR_USERONCHANNEL::ERR_USERONCHANNEL(Client *User, const std::string &target): IrcException()
 {
     std::ostringstream oss;
-    oss << errorCode() << " " << User->getNickname() << " " << target << " :is already on channel"
+    oss << errorCode() << " " << User->getNickname() << " " << target << " :is already on channel";
     message = oss.str();
 };
 
 ERR_NOLOGIN::ERR_NOLOGIN(Client *User, const std::string &target): IrcException()
 {
+    (void)target;
     std::ostringstream oss;
     oss << errorCode() << " " << User->getNickname() << " " << " User not logged in";
     message = oss.str();
@@ -135,6 +140,8 @@ ERR_NOLOGIN::ERR_NOLOGIN(Client *User, const std::string &target): IrcException(
 
 ERR_NOTREGISTERED::ERR_NOTREGISTERED(Client *User, const std::string &target): IrcException()
 {
+    (void)User;
+    (void)target;
     std::ostringstream oss;
     oss << errorCode() << " :You have not registered";
     message = oss.str();
@@ -149,6 +156,7 @@ ERR_NEEDMOREPARAMS::ERR_NEEDMOREPARAMS(Client *User, const std::string &target):
 
 ERR_ALREADYREGISTRED::ERR_ALREADYREGISTRED(Client *User, const std::string &target): IrcException()
 {
+    (void)target;
     std::ostringstream oss;
     oss << errorCode() << " " << User->getNickname() << " :You may not reregister";
     message = oss.str();
@@ -156,6 +164,7 @@ ERR_ALREADYREGISTRED::ERR_ALREADYREGISTRED(Client *User, const std::string &targ
 
 ERR_PASSWDMISMATCH::ERR_PASSWDMISMATCH(Client *User, const std::string &target): IrcException()
 {
+    (void)target;
     std::ostringstream oss;
     oss << errorCode() << " " << User->getNickname() << " :Password incorrect"; 
     message = oss.str();
@@ -185,7 +194,7 @@ ERR_UNKNOWNMODE::ERR_UNKNOWNMODE(Client *User, const std::string &target): IrcEx
 ERR_INVITEONLYCHAN::ERR_INVITEONLYCHAN(Client *User, const std::string &target): IrcException()
 {
     std::ostringstream oss;
-    oss << errorCode() << " " << User->getNickname() << " " << target << " :Cannot join channel (+i)":
+    oss << errorCode() << " " << User->getNickname() << " " << target << " :Cannot join channel (+i)";
     message = oss.str();
 };
 

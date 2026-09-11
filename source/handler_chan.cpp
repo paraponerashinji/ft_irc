@@ -269,11 +269,11 @@ void    Server::invite(Client *sender, std::string text)
     try
     {
         Channel *channel = getChannel(params[1]);
-        if (channel = NULL)
+        if (channel == NULL)
             throw ERR_NOSUCHCHANNEL(sender, params[0]);
         Client *target = getClientPtr(params[0]);
         if (target == NULL)
-            throw ERR_NOSUCHNICK(sender, params[0])
+            throw ERR_NOSUCHNICK(sender, params[0]);
         channel->add_Invited(sender, target);
         std::ostringstream output;
         output << "INVITE " << target->getNickname() << " " << channel->getName();
@@ -285,7 +285,7 @@ void    Server::invite(Client *sender, std::string text)
         {
             Client *target = getClientPtr(params[0]);
             if (target == NULL)
-                throw ERR_NOSUCHNICK(sender, params[0])
+                throw ERR_NOSUCHNICK(sender, params[0]);
             std::ostringstream output;
             output << "INVITE " << target->getNickname() << " #" << params[1];
             sender->sendMessage(target, output.str());
@@ -303,7 +303,7 @@ void    Server::topic(Client *sender, std::string text)
     if (params[0][0] != '#' && params[0][0] != '&')
         throw ERR_NOSUCHCHANNEL(sender, params[0]);
     Channel *channel = getChannel(params[0]);
-    if (channel = NULL)
+    if (channel == NULL)
         throw ERR_NOSUCHCHANNEL(sender, params[0]);
     channel->editTopic(sender, params[1]);
     std::ostringstream output;

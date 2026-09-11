@@ -4,6 +4,7 @@ SRCS = socket.cpp \
 	   source/handler_serv.cpp \
 	   source/channel.cpp \
 	   source/client.cpp \
+	   source/exception.cpp \
 	   main.cpp \
 	   irc_loop.cpp 
 
