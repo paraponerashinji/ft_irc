@@ -17,9 +17,9 @@ Channel::Channel() {
 
 Channel::Channel(Server *server, std::string name, Client *client): _server(server), _name(name)
 {
-    if (name.find_first_of("#") == std::npos)
+    if (name.find_first_of("#") == std::string::npos)
         throw ERR_BADCHANMASK(client, name);
-    if (name.find_first_of(" '") != std::npos)
+    if (name.find_first_of(" '") != std::string::npos)
         throw ERR_BADCHANMASK(client, name);
     _Admins.push_back(client);
     _Clients.push_back(client);
@@ -35,9 +35,9 @@ Channel::Channel(Server *server, std::string name, Client *client): _server(serv
 
 Channel::Channel(Server *server, std::string name, std::string password, Client *client): _server(server), _name(name)
 {
-    if (name.find_first_of("#") == std::npos)
+    if (name.find_first_of("#") == std::string::npos)
         throw ERR_BADCHANMASK(client, name);
-    if (name.find_first_of(" '") != std::npos)
+    if (name.find_first_of(" '") != std::string::npos)
         throw ERR_BADCHANMASK(client, name);
     _Admins.push_back(client);
     _Clients.push_back(client);
@@ -214,7 +214,7 @@ void    Channel::set_password(Client *user, std::string password)
 void    Channel::add_Admin(Client *user, Client *target)
 {
     if (target == NULL)
-        throw ERR_NOSUCHNICK(user, )
+        throw ERR_NOSUCHNICK(user, "");
     if (std::find(_Clients.begin(), _Clients.end(), user) == _Clients.end())
         throw ERR_NOTONCHANNEL(user, _name);
     if (std::find(_Admins.begin(), _Admins.end(), user) == _Clients.end())
