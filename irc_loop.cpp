@@ -30,6 +30,7 @@ std::vector<std::string> Server::parseCommand(std::string text)
 }
 void Server::executeCommand(Client* client, const std::string& rawLine) {
     try {
+        
         std::vector<std::string> tokens = parseCommand(rawLine);
         if (tokens.empty())
             return;
@@ -39,8 +40,9 @@ void Server::executeCommand(Client* client, const std::string& rawLine) {
             cmdName[i] = std::toupper(cmdName[i]);
 
         std::vector<std::string> params(tokens.begin() + 1, tokens.end());
-        std::cout << cmdName << std::endl;
+
         std::map<std::string, CommandHandler>::iterator it = _commandMap.find(cmdName);
+
         if (it != _commandMap.end()) {
             CommandHandler handler = it->second;
             (this->*handler)(client, params);
@@ -49,8 +51,7 @@ void Server::executeCommand(Client* client, const std::string& rawLine) {
             throw ERR_UNKNOWNCOMMAND(client, cmdName);
         }
     }
-    catch (IrcException &e)
-    {
+    catch (IrcException &e) {
         sendError(client, e.what());
     }
 }
