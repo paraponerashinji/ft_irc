@@ -82,7 +82,7 @@ void Server::broadcastToCommonChannels(Client* client, const std::string& messag
 void Server::Nick(Client* client, const std::vector<std::string>& params) {
     // 1. Vérification des arguments (ERR_NONICKNAMEGIVEN - 431)
     if (params.empty() || params[0].empty()) {
-        throw ERR_NONICKNAMEGIVEN(client, ":No nickname given");
+        throw ERR_NONICKNAMEGIVEN(client, "");
         //sendError(client, "431", "ERR_NONICKNAMEGIVEN", ":No nickname given");
         return;
     }
@@ -91,17 +91,16 @@ void Server::Nick(Client* client, const std::vector<std::string>& params) {
 
     // 2. Validation de la syntaxe du pseudo (ERR_ERRONEUSNICKNAME - 432)
     if (!isValidNickname(newNick)) {
-        throw ERR_ERRONEUSNICKNAME(client, "<nick> :Errorneus nickname");
+        throw ERR_ERRONEUSNICKNAME(client, newNick);
         //sendError(client, "432", "ERR_ERRONEUSNICKNAME", newNick + " :Erroneous nickname");
         return;
     }
 
     // 3. Vérification de la disponibilité (ERR_NICKNAMEINUSE - 433)
-    Client* existingClient = &getClientRef(newNick);
+    Client* existingClient = getClientPtr(newNick);
     if (existingClient && existingClient != client) {
-        throw ERR_NICKNAMEINUSE(client, "<nick> :Nickname is already in use");
+        throw ERR_NICKNAMEINUSE(client, newNick);
         //sendError(client, "433", "ERR_NICKNAMEINUSE", newNick + " :Nickname is already in use");
-        return;
     }
 
     // 4. Cas N°1 : Changement de pseudo une fois DÉJÀ enregistré
@@ -168,7 +167,7 @@ void Server::User(Client* client, const std::vector<std::string>& params) {
     // (Note: hostname et servername envoyés par le client sont ignorés selon les RFC récentes)
     client->setUsername(params[0]);
     client->setRealname(params[3]);
-
+    sendMessage(*client, client->getRealname());
     // 4. Marquer le flag USER comme reçu et tenter de finaliser l'enregistrement
     //client->setHasUser(true);
     //checkRegistration(client);

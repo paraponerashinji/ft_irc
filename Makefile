@@ -1,5 +1,5 @@
 SRCS = socket.cpp \
-	   server.cpp \
+	   source/server.cpp \
 	   source/handler_chan.cpp \
 	   source/handler_serv.cpp \
 	   source/channel.cpp \

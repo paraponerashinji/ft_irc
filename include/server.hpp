@@ -96,7 +96,7 @@ class   Server {
     void    removeClient(int fd);
 
     void    createChannel(std::string name, Client *creator);
-    void    createChannel(std::string name, std::string password, Client *creator);
+    void    createChannel(std::string name, Client *creator, std::string password);
     void    sendMessage(Client &c, std::string message);
     void    receiveMessage(Client &c, std::string message);
     bool    isFullyRegistered(Client *sender);
@@ -106,18 +106,16 @@ class   Server {
     void    Nick(Client* client, const std::vector<std::string>& params);
     void    User(Client* client, const std::vector<std::string>& params);
     void    Quit(Client* client, const std::vector<std::string>& params);
-    void    join(Client *sender, std::string text);
-    void    part(Client *sender, std::string text);
-    void    privmsg(Client *sender, std::string text);
-    void    kick(Client *sender, std::string text);
-    void    invite(Client *sender, std::string text);
-    void    topic(Client *sender, std::string text);
-    void    mode(Client *sender, std::string text);
-
-    std::vector<std::string> parseCommand(std::string line);
+    void    join(Client *sender, const std::vector<std::string>& params);
+    void    part(Client *sender, const std::vector<std::string>& params);
+    void    privmsg(Client *sender, const std::vector<std::string>& params);
+    void    kick(Client *sender, const std::vector<std::string>& params);
+    void    invite(Client *sender, const std::vector<std::string>& params);
+    void    topic(Client *sender, const std::vector<std::string>& params);
+    void    mode(Client *sender, const std::vector<std::string>& params);
     bool    isValidNickname(const std::string& nick);
     void    broadcastToCommonChannels(Client* client, const std::string& message);
-    //void    checkRegistration(Client* client);
+    std::vector<std::string> parseCommand(std::string line);
     void    executeCommand(Client* client, const std::string& rawLine);
     void    run_server_loop(Server &server);
     void    cleanDisconnectedClients();

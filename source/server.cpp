@@ -1,9 +1,9 @@
-#include "server.hpp"
-#include "client.hpp"
-#include "message.hpp"
-#include "channel.hpp"
-
-Server::Server() _password(password), _serverFd(server_fd) {
+#include "../include/server.hpp"
+#include "../include/client.hpp"
+#include "../include/message.hpp"
+#include "../include/channel.hpp"
+#include "../include/exception.hpp"
+Server::Server() {
     _commandMap["PASS"] = &Server::Pass;
     _commandMap["NICK"] = &Server::Nick;
     _commandMap["USER"] = &Server::User;
@@ -15,6 +15,10 @@ Server::Server() _password(password), _serverFd(server_fd) {
     _commandMap["INVITE"] = &Server::invite;
     _commandMap["TOPIC"] = &Server::topic;
     _commandMap["MODE"] = &Server::mode;
+    for (std::map<std::string, CommandHandler>::iterator it = _commandMap.begin(); it != _commandMap.end(); ++it)
+    {
+        std::cout << "MAP COMMAND = [" << it->first << "]" << std::endl;
+    }
 }
 
 Server::Server(std::string password, int server_fd) : _password(password), _serverFd(server_fd) {
@@ -29,12 +33,16 @@ Server::Server(std::string password, int server_fd) : _password(password), _serv
     _commandMap["INVITE"] = &Server::invite;
     _commandMap["TOPIC"] = &Server::topic;
     _commandMap["MODE"] = &Server::mode;
+    for (std::map<std::string, CommandHandler>::iterator it = _commandMap.begin(); it != _commandMap.end(); ++it)
+    {
+        std::cout << "MAP COMMAND = [" << it->first << "]" << std::endl;
+    }
 }
 
 Server::~Server() {
     for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getFd() >= 0)
-            close(it->getFd());
+        if ((*it)->getFd() >= 0)
+            close((*it)->getFd());
     }
     _clients.clear();
     _channels.clear();
@@ -49,18 +57,18 @@ int Server::getServerFd() const {
 
 Client Server::getClient(int fd) {
     for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getFd() == fd)
-            return *it;
+        if ((*it)->getFd() == fd)
+            return *(*it);
     }
     return Client();
 }
 
 Client &Server::getClientRef(int fd) {
     for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getFd() == fd)
-            return *it;
+        if ((*it)->getFd() == fd)
+            return *(*it);
     }
-    static Client empty_client(-1);
+    static Client empty_client(this, -1);
     return empty_client;
 }
 
@@ -70,35 +78,34 @@ std::vector<Client*> *Server::getClients() const {
 
 Client *Server::getClientPtr(std::string nickname) {
     for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getNickname() == nickname)
-            return &(*it);
+        if ((*it)->getNickname() == nickname)
+            return (*it);
     }
     return NULL;
 }
 
 Client Server::getClient(std::string nickname) {
     for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getNickname() == nickname)
-            return *it;
+        if ((*it)->getNickname() == nickname)
+            return *(*it);
     }
     return Client();
 }
 
 Client &Server::getClientRef(std::string nickname) {
     for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getNickname() == nickname)
-            return *it;
+        if ((*it)->getNickname() == nickname)
+            return *(*it);
     }
-    static Client empty_client(-1);
+    static Client empty_client(this, -1);
     return empty_client;
 }
 
 Channel *Server::getChannel(std::string name) {
     for (std::vector<Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it) {
-        if (it->getName() == name)
-            return &(*it);
+        if ((*it)->getName() == name)
+            return (*it);
     }
-    throw   ERR_NOSUCHCHANNEL(name);
     return NULL;
 }
 
@@ -110,9 +117,9 @@ std::string Server::getPassword() const {
     return _password;
 }
 
-void Server::addClient(Client c) {
+void Server::addClient(Client *c) {
     for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getFd() == c.getFd())
+        if ((*it)->getFd() == c->getFd())
             return;
     }
     _clients.push_back(c);
@@ -120,32 +127,32 @@ void Server::addClient(Client c) {
 
 void Server::removeClient(int fd) {
     for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getFd() == fd) {
-            if (it->getFd() >= 0)
-                close(it->getFd());
+        if ((*it)->getFd() == fd) {
+            if ((*it)->getFd() >= 0)
+                close((*it)->getFd());
             _clients.erase(it);
             return;
         }
     }
 }
 
-void Server::createChannel(std::string name, Client creator) {
+void Server::createChannel(std::string name, Client *creator) {
     for (std::vector<Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it) {
-        if (it->getName() == name)
+        if ((*it)->getName() == name)
             return;
     }
 
-    Channel new_channel(this, name, creator);
+    Channel *new_channel = new Channel(this, name, creator);
     _channels.push_back(new_channel);
 }
 
-void Server::createChannel(std::string name, Client creator, std::string password) {
+void Server::createChannel(std::string name, Client *creator, std::string password) {
     for (std::vector<Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it) {
-        if (it->getName() == name)
+        if ((*it)->getName() == name)
             return;
     }
 
-    Channel new_channel(this, name, password, creator);
+    Channel *new_channel = new Channel(this, name, password, creator);
     _channels.push_back(new_channel);
 }
 
@@ -159,7 +166,7 @@ void Server::sendMessage(Client &c, std::string message) {
     std::cout << "To " << c.getNickname() << message << std::endl;
     send(c.getFd(), data.c_str(), data.size(), 0);
 }
-
+/*
 void Server::receiveMessage(Client &c, std::string message) {
     if (message.empty())
         return;
@@ -269,25 +276,9 @@ void Server::receiveMessage(Client &c, std::string message) {
         }
         return;
     }
-}
+}*/
 
-bool    Server::isFullyRegistered(Client *sender)
-{
-    if (sender->getUsername().empty())
-        return false;
-    if (sender->getNickname().empty())
-        return false;
-    if (sender->getHostname().empty())
-        return false;
-    return true;
-};
-
-void    Server::ircERROR(Client *user, int code)
-{
-    (void)user;
-    (void)code;
-};
-
+/*
 void Server::cleanDisconnectedClients() {
     for (size_t i = 0; i < _clients.size(); ++i) {
         if (_clients[i]->shouldDisconnect()) {
@@ -305,7 +296,7 @@ void Server::cleanDisconnectedClients() {
             --i;
         }
     }
-}
+}*/
 
 
 /*

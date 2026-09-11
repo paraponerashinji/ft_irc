@@ -4,41 +4,55 @@
 #include <cstdio>
 #include <map>
 
-std::vector<std::string> Server::parseCommand(std::string line)
+std::vector<std::string> Server::parseCommand(std::string text)
 {
-    std::stringstream ss(line);
+    std::stringstream ss(text);
     std::vector<std::string> params;
     std::string word;
     while (ss >> word)
+    {
+        if (!word.empty() && word[0] == ':')
+        {
+            std::string rest;
+            std::getline(ss, rest);
+            if (!rest.empty() && rest[0] == ' ')
+                rest.erase(0, 1);
+            std::string combined = word.substr(1);
+            if (!rest.empty())
+                combined += std::string(" ") + rest;
+
+            params.push_back(combined);
+            break;
+        }
         params.push_back(word);
+    }
     return params;
 }
 void Server::executeCommand(Client* client, const std::string& rawLine) {
-    std::vector<std::string> tokens = parseCommand(rawLine);
-    if (tokens.empty())
-        return;
+    try {
+        std::vector<std::string> tokens = parseCommand(rawLine);
+        if (tokens.empty())
+            return;
 
-    std::string cmdName = tokens[0];
-    for (size_t i = 0; i < cmdName.length(); ++i)
-        cmdName[i] = std::toupper(cmdName[i]);
+        std::string cmdName = tokens[0];
+        for (size_t i = 0; i < cmdName.length(); ++i)
+            cmdName[i] = std::toupper(cmdName[i]);
 
-    std::vector<std::string> params(tokens.begin() + 1, tokens.end());
-
-    std::map<std::string, CommandHandler>::iterator it = _commandMap.find(cmdName);
-
-    if (it != _commandMap.end()) {
-        CommandHandler handler = it->second;
-        (this->*handler)(client, params);
-    }
-    else {
-        throw ERR_UNKNOWNCOMMAND(client, cmdName);
-    }
-    /*try
-    {
-
+        std::vector<std::string> params(tokens.begin() + 1, tokens.end());
+        std::cout << cmdName << std::endl;
+        std::map<std::string, CommandHandler>::iterator it = _commandMap.find(cmdName);
+        if (it != _commandMap.end()) {
+            CommandHandler handler = it->second;
+            (this->*handler)(client, params);
+        }
+        else {
+            throw ERR_UNKNOWNCOMMAND(client, cmdName);
+        }
     }
     catch (IrcException &e)
-        sendError(client, e.what())*/
+    {
+        sendError(client, e.what());
+    }
 }
 
 void Server::run_server_loop(Server &server)
@@ -50,9 +64,13 @@ void Server::run_server_loop(Server &server)
     server_pollfd.events = POLLIN; // on attend des donnees sur la socket serveur
     server_pollfd.revents = 0;
     fds.push_back(server_pollfd); // on ajoute la socket serveur dans la liste
-
+    std::cout << "SERVER UP" << std::endl;
     while (true)
     {
+        std::cout << "Liste des clients" << std::endl;
+        for (size_t i = 0; i < _clients.size(); i++)
+            std::cout << &_clients[i] << std::endl;
+        std::cout << "Fin liste clients " << std::endl;
         int ret = poll(&fds[0], fds.size(), -1); // attend activite reseau sur plusieurs sockets
         if (ret < 0)
         {
@@ -88,7 +106,6 @@ void Server::run_server_loop(Server &server)
                 close(client_fd);
                 continue;
             }
-
             Client new_client(&server, client_fd); // cree un client en attente de PASS
             new_client.setHostname(ip);
             pending_clients[client_fd] = new_client;
@@ -109,16 +126,38 @@ void Server::run_server_loop(Server &server)
             std::memset(buffer, 0, sizeof(buffer));
 
             ssize_t n = recv(fds[i].fd, buffer, sizeof(buffer) - 1, 0); // lit le message du client
-            if (n <= 0)
+            std::cout << "recv(fd=" << fds[i].fd << ") = " << n << std::endl;
+
+            if (n == 0)
             {
-                close(fds[i].fd); // ferme la socket client
+                std::cout << ">>> CLIENT DISCONNECTED" << std::endl;
+            
+                close(fds[i].fd);
                 pending_clients.erase(fds[i].fd);
-                server.removeClient(fds[i].fd); // retire le client du serveur
-                fds.erase(fds.begin() + i); // retire la socket de la liste poll
+                server.removeClient(fds[i].fd);
+                fds.erase(fds.begin() + i);
                 --i;
                 continue;
             }
-
+            
+            if (n < 0)
+            {
+                std::cout << ">>> recv error: "
+                          << strerror(errno)
+                          << " errno=" << errno
+                          << std::endl;
+            
+                // temporairement, ne ferme PAS le client pour EAGAIN/EWOULDBLOCK
+                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                    continue;
+            
+                close(fds[i].fd);
+                pending_clients.erase(fds[i].fd);
+                server.removeClient(fds[i].fd);
+                fds.erase(fds.begin() + i);
+                --i;
+                continue;
+            }
             Client *buffer_client = NULL;
             Client &server_client = server.getClientRef(fds[i].fd);
             std::map<int, Client>::iterator pending_it = pending_clients.find(fds[i].fd);
@@ -130,16 +169,13 @@ void Server::run_server_loop(Server &server)
 
             if (buffer_client == NULL)
                 continue;
-
             buffer_client->appendToBuffer(std::string(buffer, n)); // ajoute les donnees recues au buffer du client
-
             while (true)
             {
                 Client *client_ptr = NULL;
                 bool active_client = false;
                 Client &current_server_client = server.getClientRef(fds[i].fd);
                 std::map<int, Client>::iterator current_pending_it = pending_clients.find(fds[i].fd);
-
                 if (current_server_client.getFd() != -1)
                 {
                     client_ptr = &current_server_client;
@@ -149,11 +185,15 @@ void Server::run_server_loop(Server &server)
                     client_ptr = &current_pending_it->second;
 
                 if (client_ptr == NULL)
+                {
                     break;
+                }
 
                 if (client_ptr->getBuffer().find("\r\n") == std::string::npos)
+                {
+                    std::cout << client_ptr->getBuffer() << std::endl;
                     break;
-
+                }
                 std::string::size_type pos = client_ptr->getBuffer().find("\r\n");
                 std::string line = client_ptr->getBuffer().substr(0, pos); // extrait une ligne complete IRC
                 std::string remaining = client_ptr->getBuffer().substr(pos + 2); // garde le reste du buffer
