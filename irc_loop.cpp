@@ -14,31 +14,31 @@ std::vector<std::string> Server::parseCommand(std::string line)
     return params;
 }
 void Server::executeCommand(Client* client, const std::string& rawLine) {
-    std::vector<std::string> tokens = parseCommand(rawLine);
-    if (tokens.empty())
-        return;
+    try {
+        
+        std::vector<std::string> tokens = parseCommand(rawLine);
+        if (tokens.empty())
+            return;
 
-    std::string cmdName = tokens[0];
-    for (size_t i = 0; i < cmdName.length(); ++i)
-        cmdName[i] = std::toupper(cmdName[i]);
+        std::string cmdName = tokens[0];
+        for (size_t i = 0; i < cmdName.length(); ++i)
+            cmdName[i] = std::toupper(cmdName[i]);
 
-    std::vector<std::string> params(tokens.begin() + 1, tokens.end());
+        std::vector<std::string> params(tokens.begin() + 1, tokens.end());
 
-    std::map<std::string, CommandHandler>::iterator it = _commandMap.find(cmdName);
+        std::map<std::string, CommandHandler>::iterator it = _commandMap.find(cmdName);
 
-    if (it != _commandMap.end()) {
-        CommandHandler handler = it->second;
-        (this->*handler)(client, params);
+        if (it != _commandMap.end()) {
+            CommandHandler handler = it->second;
+            (this->*handler)(client, params);
+        }
+        else {
+            throw ERR_UNKNOWNCOMMAND(client, cmdName);
+        }
     }
-    else {
-        throw ERR_UNKNOWNCOMMAND(client, cmdName);
+    catch (IrcException &e) {
+        sendError(client, e.what());
     }
-    /*try
-    {
-
-    }
-    catch (IrcException &e)
-        sendError(client, e.what())*/
 }
 
 void Server::run_server_loop(Server &server)
