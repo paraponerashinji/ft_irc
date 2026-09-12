@@ -60,6 +60,24 @@ send_message(Client, std::string)*/
 #include <map>
 #include <algorithm>
 
+#define RESET "\033[0m"
+#define BLACK   "\033[30m"
+#define RED     "\033[31m"
+#define GREEN   "\033[32m"
+#define YELLOW  "\033[33m"
+#define BLUE    "\033[34m"
+#define MAGENTA "\033[35m"
+#define CYAN    "\033[36m"
+#define WHITE   "\033[37m"
+#define BBLACK   "\033[90m"
+#define BRED     "\033[91m"
+#define BGREEN   "\033[92m"
+#define BYELLOW  "\033[93m"
+#define BBLUE    "\033[94m"
+#define BMAGENTA "\033[95m"
+#define BCYAN    "\033[96m"
+#define BWHITE   "\033[97m"
+
 class   Server {
 
     private:
@@ -68,6 +86,7 @@ class   Server {
     std::vector<Channel*>    _channels;
     std::string             _password;
     int                     _serverFd;
+    int                     _port;
     
     typedef void (Server::*CommandHandler)(Client* client, const std::vector<std::string>& params);
     std::map<std::string, CommandHandler> _commandMap;
@@ -83,6 +102,7 @@ class   Server {
     Client  getClient(int fd);
     Client  getClient(std::string nickname);
     Client  *getClientPtr(std::string nickname);
+    Client *getClientPtr(int nickname);
     Client &getClientRef(int fd);
     Client &getClientRef(std::string nickname);
 
@@ -97,6 +117,7 @@ class   Server {
 
     void    createChannel(std::string name, Client *creator);
     void    createChannel(std::string name, Client *creator, std::string password);
+    void    removeChannel(Channel *channel);
     void    sendMessage(Client &c, std::string message);
     void    receiveMessage(Client &c, std::string message);
     bool    isFullyRegistered(Client *sender);
@@ -117,6 +138,9 @@ class   Server {
     void    broadcastToCommonChannels(Client* client, const std::string& message);
     std::vector<std::string> parseCommand(std::string line);
     void    executeCommand(Client* client, const std::string& rawLine);
+    void    setPort(int port);
+    void    sendWelcome(Client *client);
+    void    run_server_loop();
     void    run_server_loop(Server &server);
     void    cleanDisconnectedClients();
 

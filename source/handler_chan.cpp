@@ -142,13 +142,18 @@ void    Server::part(Client *sender, const std::vector<std::string>& params)
         if (channels[j].empty())
             throw ERR_NOSUCHCHANNEL(sender, "");;
         Channel *channel = getChannel(channels[j]);
-        channel->quit(sender);
+        if (channel == NULL)
+            throw ERR_NOSUCHCHANNEL(sender, channels[j]);;
         std::ostringstream output;
         if (args.empty())
             output << "PART " << channel->getName();
         else
             output << "PART " << channel->getName() << " :" << args[0];
         channel->broadcast(sender, output.str());
+        sender->sendMessage(sender, output.str());
+        channel->quit(sender);
+        if (channel->getUsersize() <= 0)
+            removeChannel(channel);
     }
 };
 
@@ -175,6 +180,8 @@ void    Server::privmsg(Client *sender, const std::vector<std::string>& params)
             try
             {
                 Channel *channel = getChannel(channels[j]);
+                if (channel == NULL)
+                    throw ERR_NOSUCHCHANNEL(sender, channels[j]);
                 Client *c = channel->getClients(sender);
                 if (c == NULL)
                     throw ERR_NOTONCHANNEL(sender, channels[j]);
@@ -242,6 +249,7 @@ void    Server::kick(Client *sender, const std::vector<std::string>& params)
                 output << "KICK " << channel->getName() << " " << target->getNickname() << " " << params[2];
                 channel->broadcast(sender, output.str());
                 sender->sendMessage(target, output.str());
+                sendMessage(*sender, output.str());
                 continue ;
             }
             output << "KICK " << channel->getName() << " " << target->getNickname();
@@ -340,6 +348,8 @@ void    Server::mode(Client *sender, const std::vector<std::string>& params1)
             {
                 if (params.size() < k)
                     throw ERR_NEEDMOREPARAMS(sender, "MODE");
+                if (channel->getAdmins(sender) == NULL)
+                    throw ERR_CHANOPRIVSNEEDED(sender, channel->getName());
                 Client *c = getClientPtr(params[k]);
                 if (c == NULL)
                     throw ERR_NOSUCHNICK(sender, params[k]);

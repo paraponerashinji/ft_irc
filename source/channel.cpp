@@ -31,6 +31,16 @@ Channel::Channel(Server *server, std::string name, Client *client): _server(serv
     _invite_only = false;
     _topic_admin_only = false;
     _room_password_active = false;
+    std::cout << name << " got created" << std::endl;
+    std::cout << "Users :";
+    for (size_t i = 0; i < _Clients.size(); i++)
+        std::cout << _Clients[i]->getNickname() << std::endl;
+    std::cout << "Admins :";
+    for (size_t i = 0; i < _Admins.size(); i++)
+        std::cout << _Admins[i]->getNickname() << std::endl;
+    std::vector<std::string> channels = client->getChannels();
+    for (size_t i = 0; i < channels.size(); i++)
+        std::cout << channels[i] << std::endl;
 };
 
 Channel::Channel(Server *server, std::string name, std::string password, Client *client): _server(server), _name(name)
@@ -49,11 +59,59 @@ Channel::Channel(Server *server, std::string name, std::string password, Client 
     _invite_only = false;
     _topic_admin_only = false;
     _room_password_active = true;
+    std::cout << name << " got created" << std::endl;
+    std::cout << "Users :";
+    for (size_t i = 0; i < _Clients.size(); i++)
+        std::cout << _Clients[i]->getNickname() << std::endl;
+    std::cout << "Admins :";
+    for (size_t i = 0; i < _Admins.size(); i++)
+        std::cout << _Admins[i]->getNickname() << std::endl;
+    std::vector<std::string> channels = client->getChannels();
+    for (size_t i = 0; i < channels.size(); i++)
+        std::cout << channels[i] << std::endl;
 };
 
 Channel::~Channel()
 {
 };
+
+bool Channel::isAdmin(Client *client)
+{
+    for (std::vector<Client*>::const_iterator it = _Admins.begin();
+         it != _Admins.end();
+         ++it)
+    {
+        if (*it == client)
+            return true;
+    }
+    return false;
+}
+
+void    Channel::sendChanWelcome(Client *client)
+{
+    std::ostringstream oss;
+    if (_topic.empty())
+        oss << ":127.0.0.1 331 " << client->getNickname() << " " << getName() << " :No topic is set";
+    else
+        oss << ":127.0.0.1 332 " << client->getNickname() << " " << getName() << " :" << _topic;
+    _server->sendMessage(*client, oss.str());
+    oss.str("");
+    oss.clear();
+    oss << ":127.0.0.1 353 " << client->getNickname() << " = " << getName() << " :";
+    for (std::vector<Client*>::iterator it = _Clients.begin(); it != _Clients.end(); ++it)
+    {
+        if (isAdmin(*it))
+            oss << "@";
+        oss << (*it)->getNickname() << " ";
+    }
+    _server->sendMessage(*client, oss.str());
+    oss.str("");
+    oss.clear();
+    oss << ":127.0.0.1 366 " << client->getNickname() << " " << getName() << " :End of /NAMES list.";
+    _server->sendMessage(*client, oss.str());
+    oss.str("");
+    oss.clear();
+}
 
 std::string Channel::hash_password(const std::string& password)
 {
@@ -100,6 +158,7 @@ void    Channel::join(Client *user)
     
     _Clients.push_back(user);
     _user_size++;
+    sendChanWelcome(user);
     user->addChannel(_name);
     std::vector<Client*>::iterator it = std::find(_Invited.begin(), _Invited.end(), user);
     if (it != _Invited.end())
@@ -138,6 +197,7 @@ void    Channel::join(Client *user, std::string password)
     _user_size++;
     if (it != _Invited.end())
         _Invited.erase(it);
+    sendChanWelcome(user);
     user->addChannel(_name);
 };
 
@@ -259,6 +319,7 @@ void    Channel::remove_password(Client *user)
 
 void    Channel::broadcast(Client *sender, std::string message)
 {
+    std::vector<Client*>::iterator it;
     if (std::find(_Clients.begin(), _Clients.end(), sender) == _Clients.end())
         throw ERR_NOTONCHANNEL(sender, _name);
     for (std::vector<Client*>::iterator it = _Clients.begin(); it != _Clients.end(); ++it)
@@ -270,7 +331,6 @@ void    Channel::broadcast(Client *sender, std::string message)
 
 void    Channel::add_Invited(Client *user, Client *target)
 {
-    std::cout << "p";
     if (std::find(_Clients.begin(), _Clients.end(), user) == _Clients.end())
         throw ERR_NOTONCHANNEL(user, _name);
     if (std::find(_Admins.begin(), _Admins.end(), user) == _Admins.end() && _invite_only)
@@ -329,6 +389,12 @@ size_t  Channel::getUserLimit()
 {
     return _user_limit;
 };
+
+size_t  Channel::getUsersize()
+{
+    return _user_size;
+};
+
 
 bool    Channel::isTopicAdmin()
 {

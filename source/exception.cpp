@@ -3,7 +3,7 @@
 void    Server::sendError(Client *user, std::string text)
 {
     std::ostringstream oss;
-    oss << ":localhost " << text;
+    oss << ":127.0.0.1 " << text;
     std::string message;
     message = oss.str();
     sendMessage(*user, message);

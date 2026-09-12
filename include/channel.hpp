@@ -48,12 +48,15 @@ class Channel
         void    remove_password(Client *user);
         void    remove_Admin(Client *user, Client *target);
         size_t          getUserLimit();
+        size_t          getUsersize();
         std::string     getName() const;
         std::vector<Client*>  getClients();
         std::vector<Client*>  getAdmins();
+        bool    isAdmin(Client *client);
         Client  *getAdmins(Client*);
         Client  *getClients(Client*);
         Client *getClient(std::string user);
         bool    isTopicAdmin();
+        void    sendChanWelcome(Client *user);
 };
 #endif

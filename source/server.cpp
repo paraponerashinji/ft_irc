@@ -15,10 +15,6 @@ Server::Server() {
     _commandMap["INVITE"] = &Server::invite;
     _commandMap["TOPIC"] = &Server::topic;
     _commandMap["MODE"] = &Server::mode;
-    for (std::map<std::string, CommandHandler>::iterator it = _commandMap.begin(); it != _commandMap.end(); ++it)
-    {
-        std::cout << "MAP COMMAND = [" << it->first << "]" << std::endl;
-    }
 }
 
 Server::Server(std::string password, int server_fd) : _password(password), _serverFd(server_fd) {
@@ -33,10 +29,6 @@ Server::Server(std::string password, int server_fd) : _password(password), _serv
     _commandMap["INVITE"] = &Server::invite;
     _commandMap["TOPIC"] = &Server::topic;
     _commandMap["MODE"] = &Server::mode;
-    for (std::map<std::string, CommandHandler>::iterator it = _commandMap.begin(); it != _commandMap.end(); ++it)
-    {
-        std::cout << "MAP COMMAND = [" << it->first << "]" << std::endl;
-    }
 }
 
 Server::~Server() {
@@ -84,6 +76,15 @@ Client *Server::getClientPtr(std::string nickname) {
     return NULL;
 }
 
+Client *Server::getClientPtr(int nickname) {
+    for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+        if ((*it)->getFd() == nickname)
+            return (*it);
+    }
+    return NULL;
+}
+
+
 Client Server::getClient(std::string nickname) {
     for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
         if ((*it)->getNickname() == nickname)
@@ -109,6 +110,16 @@ Channel *Server::getChannel(std::string name) {
     return NULL;
 }
 
+void    Server::removeChannel(Channel *channel)
+{
+    std::vector<Channel*>::iterator it = std::find(_channels.begin(), _channels.end(), channel);
+    if (it != _channels.end())
+    {
+        delete *it;
+        _channels.erase(it);
+    }
+}
+
 std::vector<Channel*> Server::getChannels() const {
     return _channels;
 }
@@ -130,6 +141,7 @@ void Server::removeClient(int fd) {
         if ((*it)->getFd() == fd) {
             if ((*it)->getFd() >= 0)
                 close((*it)->getFd());
+            delete *it;
             _clients.erase(it);
             return;
         }
@@ -163,8 +175,13 @@ void Server::sendMessage(Client &c, std::string message) {
     std::string data = message;
     if (data[data.size() - 1] != '\n')
         data += "\r\n";
-    std::cout << "To " << c.getNickname() << message << std::endl;
+    std::cout << YELLOW << message << RESET << std::endl;
     send(c.getFd(), data.c_str(), data.size(), 0);
+}
+
+void    Server::setPort(int port)
+{
+    _port = port;
 }
 /*
 void Server::receiveMessage(Client &c, std::string message) {
