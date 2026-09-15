@@ -81,6 +81,8 @@ void Server::broadcastToCommonChannels(Client* client, const std::string& messag
 
 void Server::Nick(Client* client, const std::vector<std::string>& params)
 {
+    if (!client->isRegistered())
+        throw ERR_NOTREGISTERED(client, "");
     if (params.empty() || params[0].empty())
         throw ERR_NONICKNAMEGIVEN(client, "");
     std::string newNick = params[0];
@@ -126,6 +128,8 @@ void Server::Nick(Client* client, const std::vector<std::string>& params)
 }*/
 
 void Server::User(Client* client, const std::vector<std::string>& params) {
+    if (!client->isRegistered())
+        throw ERR_NOTREGISTERED(client, "");
     if (isFullyRegistered(client)) {
         throw ERR_ALREADYREGISTRED(client, "");
         return;

@@ -167,6 +167,7 @@ void    Channel::join(Client *user)
 
 void    Channel::join(Client *user, std::string password)
 {
+    std::cout << BRED << "with pass :" << password << std::endl;
     if (std::find(_Clients.begin(), _Clients.end(), user) != _Clients.end())
     {
         std::string t(user->getNickname());

@@ -78,19 +78,23 @@ void    Server::join(Client *sender, const std::vector<std::string>& params)
         while (std::getline(kss, key, ','))
             keys.push_back(key);
     }
+    size_t y = 0;
     for (size_t j = 0; j < channels.size(); j++)
     {
         if (channels[j].empty())
             throw ERR_NOSUCHCHANNEL(sender, "");
         if (channels[j][0] != '#' && channels[j][0] != '&')
-            throw ERR_NOSUCHCHANNEL(sender, channels[j]);;
+            throw ERR_NOSUCHCHANNEL(sender, channels[j]);
         try
         {
             Channel *channel = getChannel(channels[j]);
             if (channel == NULL)
                throw ERR_NOSUCHCHANNEL(sender, channels[j]);
-            if (j < keys.size() && !keys[j].empty())
-                channel->join(sender, keys[j]);
+            if (y < keys.size() && !keys[y].empty())
+            {
+                channel->join(sender, keys[y]);
+                y++;
+            }
             else
                 channel->join(sender);
             std::ostringstream output;
@@ -237,6 +241,8 @@ void    Server::kick(Client *sender, const std::vector<std::string>& params)
     for (size_t j = 0; j < channels.size(); j++)
     {
         Channel *channel = getChannel(channels[j]);
+        if (channel == NULL)
+            throw ERR_NOSUCHCHANNEL(sender, channels[j]);
         for (size_t y = 0; y < users.size(); y++)
         {
             Client *target = channel->getClient(users[y]);
