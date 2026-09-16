@@ -165,8 +165,10 @@ void    Server::privmsg(Client *sender, const std::vector<std::string>& params)
 {
     if (!isFullyRegistered(sender))
         throw ERR_NOTREGISTERED(sender, "");
-    if (params.size() < 2)
+    if (params.size() == 0)
         throw ERR_NEEDMOREPARAMS(sender, "PRIVMSG");
+    if (params.size() == 1)
+        throw ERR_NOTEXTTOSEND(sender, "");
     if (params[1].empty())
         throw ERR_NOTEXTTOSEND(sender, "");
     std::vector<std::string> channels;
@@ -187,7 +189,7 @@ void    Server::privmsg(Client *sender, const std::vector<std::string>& params)
                 if (channel == NULL)
                     throw ERR_NOSUCHCHANNEL(sender, channels[j]);
                 Client *c = channel->getClients(sender);
-                if (c == NULL)
+                if (channel->getPrivate() && c == NULL)
                     throw ERR_NOTONCHANNEL(sender, channels[j]);
                 if (params[1].empty())
                     throw ERR_NOTEXTTOSEND(sender, "");
@@ -306,8 +308,22 @@ void    Server::topic(Client *sender, const std::vector<std::string>& params)
 {
     if (!isFullyRegistered(sender))
         throw ERR_NOTREGISTERED(sender, "");
-    if (params.size() < 2)
+    if (params.size() == 0)
         throw ERR_NEEDMOREPARAMS(sender, "TOPIC");
+    if (params.size() ==  1)
+    {
+        std::ostringstream oss;
+        Channel *channel = getChannel(params[0]);
+        if (channel == NULL)
+            throw ERR_NOSUCHCHANNEL(sender, params[0]);
+        std::string _topic = channel->getTopic();
+        if (_topic.empty())
+            oss << ":" << sender->getServerIp() << " 331 " << sender->getNickname() << " " << channel->getName() << " :No topic is set";
+        else
+            oss << ":" << sender->getServerIp() << " 332 " << sender->getNickname() << " " << channel->getName() << " :" << _topic;
+        sendMessage(*sender, oss.str());
+        return ;
+    }
     if (params[0][0] != '#' && params[0][0] != '&')
         throw ERR_NOSUCHCHANNEL(sender, params[0]);
     Channel *channel = getChannel(params[0]);
@@ -325,13 +341,35 @@ void    Server::mode(Client *sender, const std::vector<std::string>& params1)
     bool    make = false;
     if (!isFullyRegistered(sender))
         throw ERR_NOTREGISTERED(sender, "");
-    if (params.size() < 2)
+    if (params.size() == 0)
         throw ERR_NEEDMOREPARAMS(sender, "MODE");
     if (params[0][0] != '#' && params[0][0] != '&')
         throw ERR_NOSUCHCHANNEL(sender, params[0]);
     Channel *channel = getChannel(params[0]);
     if (channel == NULL)
         throw ERR_NOSUCHCHANNEL(sender, params[0]);
+    if (params.size() == 1)
+    {
+        std::ostringstream oss;
+        oss <<  ":" << sender->getServerIp() << " 324 " << sender->getNickname() << " " << channel->getName();
+        oss << " +";
+
+        if (channel->isInviteOnly()) oss << "i";
+        if (channel->isTopicAdmin()) oss << "t";
+        if (channel->getPrivate()) oss << "k";
+        if (channel->hasUserLimit())
+        {
+            oss << "l";
+            oss << " ";
+            oss << channel->getUserLimit();
+        }
+        sendMessage(*sender, oss.str());
+        oss.str("");
+        oss.clear();
+        oss << ":" << sender->getServerIp() << " 329 " << sender->getNickname() << " " << channel->getName() << " " << channel->getCreationTime() << std::endl;;
+        sendMessage(*sender, oss.str());
+        return;
+    }
     if (params[1][0] != '+' && params[1][0] != '-')
         throw ERR_UNKNOWNMODE(sender, std::string(1, params[1][0]));
     if (params[1][0] == '+')

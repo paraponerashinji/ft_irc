@@ -58,7 +58,6 @@ void Server::executeCommand(Client* client, const std::string& rawLine) {
 // RUN SERVER LOOP V2
 void    Server::run_server_loop()
 {
-    std::vector<struct pollfd> fds;
     struct pollfd server_pollfd;
     server_pollfd.fd = getServerFd();
     server_pollfd.events = POLLIN;
@@ -85,7 +84,7 @@ void    Server::run_server_loop()
                     socklen_t client_len = sizeof(client_addr);
 
                     int client_fd = accept(getServerFd(), (struct sockaddr*)&client_addr, &client_len); // accepte la connexion d un client
-                    std::cout << BBLUE << "New Connection, fd :" << client_fd << RESET << std::endl;
+                    std::cout << BCYAN << "New Connection, fd :" << client_fd << RESET << std::endl;
                     if (client_fd < 0)
                     {
                         perror("accept");
@@ -95,7 +94,12 @@ void    Server::run_server_loop()
                     std::memset(ip, 0, sizeof(ip));
                     if (inet_ntop(AF_INET, &client_addr.sin_addr, ip, sizeof(ip)) == NULL)
                         std::snprintf(ip, sizeof(ip), "unknown");
-                
+                    struct sockaddr_in server_addr;
+                    socklen_t server_len = sizeof(server_addr);
+                    char server_ip[INET_ADDRSTRLEN] = "127.0.0.1";
+                    if (getsockname(client_fd, (struct sockaddr*)&server_addr, &server_len) == 0) {
+                        inet_ntop(AF_INET, &server_addr.sin_addr, server_ip, sizeof(server_ip));
+                    }
                     int flags = fcntl(client_fd, F_GETFL, 0);
                     if (flags < 0 || fcntl(client_fd, F_SETFL, flags | O_NONBLOCK) < 0)
                     {
@@ -105,6 +109,7 @@ void    Server::run_server_loop()
                     }
                     Client *new_client = new Client(this, client_fd);
                     new_client->setHostname(ip);
+                    new_client->setServerIp(server_ip);
                     struct pollfd client_pollfd;
                     client_pollfd.fd = client_fd;
                     client_pollfd.events = POLLIN;
@@ -119,16 +124,15 @@ void    Server::run_server_loop()
                     ssize_t n = recv(fds[i].fd, buffer, sizeof(buffer) - 1, 0);
                     if (n <= 0)
                     {
-                        std::cout << BRED <<"Client disconnection, fd :" << fds[i].fd << RESET << std::endl;
-                        close(fds[i].fd);
-                        removeClient(fds[i].fd);
+                        std::vector<std::string> params;
+                        Quit(&getClientRef(fds[i].fd), params);
                         fds.erase(fds.begin() + i);
                         continue;
                     }
                     Client *client_ptr = getClientPtr(fds[i].fd);
                     if (client_ptr == NULL)
                     {
-                        std::cout << RED <<"fd Error, fd :" << fds[i].fd << RESET << std::endl;
+                        std::cout << BRED <<"fd Error, fd :" << fds[i].fd << RESET << std::endl;
                         continue;
                     }
                     client_ptr->appendToBuffer(std::string(buffer, n));
@@ -140,7 +144,7 @@ void    Server::run_server_loop()
                         std::string line = client_ptr->getBuffer().substr(0, pos);
                         std::string remaining = client_ptr->getBuffer().substr(pos + 2);
                         client_ptr->setBuffer(remaining);
-                        std::cout << BLUE << "Client :" << client_ptr->getFd() << " :" << line << RESET << std::endl; 
+                        std::cout << BBLUE << "[Client " << client_ptr->getFd() << "] :" << line << RESET << std::endl; 
                         executeCommand(client_ptr, line);
                     }
                 }

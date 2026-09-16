@@ -175,7 +175,7 @@ void Server::sendMessage(Client &c, std::string message) {
     std::string data = message;
     if (data[data.size() - 1] != '\n')
         data += "\r\n";
-    std::cout << YELLOW << message << RESET << std::endl;
+    std::cout << BMAGENTA << message << RESET << std::endl;
     send(c.getFd(), data.c_str(), data.size(), 0);
 }
 

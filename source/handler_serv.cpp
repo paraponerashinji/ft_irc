@@ -13,19 +13,15 @@ void Server::sendWelcome(Client *client)
 {
     std::ostringstream oss;
 
-    oss << ":127.0.0.1 001 " << client->getNickname() << " :Welcome to the Internet Relay Network " << client->getNickname() << "!" << client->getUsername() << "@" << client->getHostname() << "\r\n";
+    oss << ":" << client->getServerIp() << " 001 " << client->getNickname() << " :Welcome to the Internet Relay Network " << client->getNickname() << "!" << client->getUsername() << "@" << client->getHostname() << "\r\n";
     sendMessage(*client, oss.str());
     oss.str("");
     oss.clear();
-    oss << ":127.0.0.1 002 " << client->getNickname() << " :Your host is localhost, running ft_irc\r\n";
+    oss << ":" << client->getServerIp() << " 002 " << client->getNickname() << " :Your host is " << client->getServerIp() << ", running ft_irc\r\n";
     sendMessage(*client, oss.str());
     oss.str("");
     oss.clear();
-    oss << ":127.0.0.1 003 " << client->getNickname() << " :This server was created today\r\n";
-    sendMessage(*client, oss.str());
-    oss.str("");
-    oss.clear();
-    oss << ":127.0.0.1 004 " << client->getNickname() << " localhost 6.7 o itkol\r\n";
+    oss << ":" << client->getServerIp() << " 003 " << client->getNickname() << " :This server was created today\r\n";
     sendMessage(*client, oss.str());
 }
 
@@ -147,38 +143,28 @@ void Server::User(Client* client, const std::vector<std::string>& params) {
 
 
 void Server::Quit(Client* client, const std::vector<std::string>& params) {
-    // 1. Déterminer la raison du départ (par défaut "Client Quit", ou le message fourni)
     std::string reason = "Quit: ";
     if (!params.empty() && !params[0].empty()) {
         reason += params[0];
     } else {
         reason += "Client Quit";
     }
-
-    // 2. Préparer le message IRC au format : :nick!user@host QUIT :reason
     std::string quitMsg = ":" + client->getPrefix() + " QUIT :" + reason + "\r\n";
-
-    // 3. Informer tous les utilisateurs qui partagent un canal avec le client déconnecté
+    std::ostringstream oss; 
+    oss << ":" << client->getServerIp() << " ERROR :Closing Link" << std::endl;
+    sendMessage(*client, oss.str());
     broadcastToCommonChannels(client, quitMsg);
-
+    std::cout << BRED <<"Client disconnection, fd :" << client->getFd() << RESET << std::endl;
     const std::vector<std::string>& clientChanNames = client->getChannels();
-    // 4. Retirer le client de tous ses canaux
     for (size_t i = 0; i < clientChanNames.size(); ++i) {
         Channel* chan = getChannel(clientChanNames[i]);
         if (chan) {
-            _channels[i]->quit(client);            
-            // Si le canal est vide après son départ, on peut le supprimer
-            /*if (_channels[i]->size() == 0) {
-                delete _channels[i];
-                _channels.erase(_channels.begin() + i);
-                --i; // Ajuster l'index après la suppression
-            }*/
+            _channels[i]->quit(client);
         }
     }
-
-    // 5. Marquer le client comme "à déconnecter" pour le nettoyer dans la boucle principale
-    //client->setShouldDisconnect(true);
-}
+    close(client->getFd());
+    removeClient(client->getFd());
+};
 
 /*void Server::cleanDisconnectedClients() {
     for (size_t i = 0; i < _clients.size(); ++i) {

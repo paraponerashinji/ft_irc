@@ -94,6 +94,16 @@ void    Client::sendMessage(Client *receiver, std::string msg)
     to_send.append(msg);
     _server->sendMessage(*receiver, to_send);
 };
+
+void    Client::setServerIp(std::string ip)
+{
+    _serverIp = ip;
+};
+
+std::string Client::getServerIp()
+{
+    return _serverIp;
+};
 /*
 void Client::sendMessage(Client *receiver, std::string msg)
 {

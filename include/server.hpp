@@ -81,7 +81,7 @@ send_message(Client, std::string)*/
 class   Server {
 
     private:
-
+    std::vector<struct pollfd> fds;
     std::vector<Client*>     _clients;
     std::vector<Channel*>    _channels;
     std::string             _password;

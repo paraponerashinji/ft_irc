@@ -15,9 +15,11 @@ Channel::Channel() {
     _room_password_active = false;
 }
 
-Channel::Channel(Server *server, std::string name, Client *client): _server(server), _name(name)
+Channel::Channel(Server *server, std::string name, Client *client): _server(server), _name(name), _creation_time(time(NULL))
 {
     if (name.find_first_of("#") == std::string::npos)
+        throw ERR_BADCHANMASK(client, name);
+    if (name.size() == 1)
         throw ERR_BADCHANMASK(client, name);
     if (name.find_first_of(" '") != std::string::npos)
         throw ERR_BADCHANMASK(client, name);
@@ -43,7 +45,7 @@ Channel::Channel(Server *server, std::string name, Client *client): _server(serv
         std::cout << channels[i] << std::endl;
 };
 
-Channel::Channel(Server *server, std::string name, std::string password, Client *client): _server(server), _name(name)
+Channel::Channel(Server *server, std::string name, std::string password, Client *client): _server(server), _name(name), _creation_time(time(NULL))
 {
     if (name.find_first_of("#") == std::string::npos)
         throw ERR_BADCHANMASK(client, name);
@@ -91,13 +93,13 @@ void    Channel::sendChanWelcome(Client *client)
 {
     std::ostringstream oss;
     if (_topic.empty())
-        oss << ":127.0.0.1 331 " << client->getNickname() << " " << getName() << " :No topic is set";
+        oss << ":" << client->getServerIp() << " 331 " << client->getNickname() << " " << getName() << " :No topic is set";
     else
-        oss << ":127.0.0.1 332 " << client->getNickname() << " " << getName() << " :" << _topic;
+        oss << ":" << client->getServerIp() << " 332 " << client->getNickname() << " " << getName() << " :" << _topic;
     _server->sendMessage(*client, oss.str());
     oss.str("");
     oss.clear();
-    oss << ":127.0.0.1 353 " << client->getNickname() << " = " << getName() << " :";
+    oss << ":" << client->getServerIp() << " 353 " << client->getNickname() << " = " << getName() << " :";
     for (std::vector<Client*>::iterator it = _Clients.begin(); it != _Clients.end(); ++it)
     {
         if (isAdmin(*it))
@@ -107,7 +109,7 @@ void    Channel::sendChanWelcome(Client *client)
     _server->sendMessage(*client, oss.str());
     oss.str("");
     oss.clear();
-    oss << ":127.0.0.1 366 " << client->getNickname() << " " << getName() << " :End of /NAMES list.";
+    oss << ":" << client->getServerIp() << " 366 " << client->getNickname() << " " << getName() << " :End of /NAMES list.";
     _server->sendMessage(*client, oss.str());
     oss.str("");
     oss.clear();
@@ -321,8 +323,6 @@ void    Channel::remove_password(Client *user)
 void    Channel::broadcast(Client *sender, std::string message)
 {
     std::vector<Client*>::iterator it;
-    if (std::find(_Clients.begin(), _Clients.end(), sender) == _Clients.end())
-        throw ERR_NOTONCHANNEL(sender, _name);
     for (std::vector<Client*>::iterator it = _Clients.begin(); it != _Clients.end(); ++it)
     {
         if (*it != sender && it != _Clients.end())
@@ -401,3 +401,29 @@ bool    Channel::isTopicAdmin()
 {
     return _topic_admin_only;
 };
+
+std::string Channel::getTopic()
+{
+    return _topic;
+};
+
+bool    Channel::getPrivate()
+{
+    return _room_password_active;
+};
+
+bool    Channel::isInviteOnly()
+{
+    return _invite_only;
+};
+
+bool    Channel::hasUserLimit()
+{
+    if (_user_limit == 0)
+        return false;
+    return true;
+};
+
+time_t Channel::getCreationTime() const {
+    return this->_creation_time;
+}

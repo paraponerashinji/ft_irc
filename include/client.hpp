@@ -20,7 +20,8 @@ private:
     std::string         _nickname;      // pseudo du client
     std::string         _username;      // nom d'utilisateur
     std::string         _realname;      // vrai nom
-    std::string         _hostname;      // adresse IP du client
+    std::string         _hostname;     // adresse IP du client
+    std::string         _serverIp;
     std::string         _buffer;        // accumule les données reçues
     bool                _is_registered; // true = mot de passe PASS validé
     std::vector<std::string> _channels; // liste des channels où il est
@@ -53,7 +54,8 @@ public:
 
     void                appendToBuffer(std::string data);
     void                clearBuffer();
-
+    void    setServerIp(std::string ip);
+    std::string getServerIp();
     void                sendMessage(Client *receiver, std::string msg);
 };
 

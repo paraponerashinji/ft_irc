@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <sstream>
+#include <ctime>
 #include "exception.hpp"
 class Server;
 class Client;
@@ -27,6 +28,7 @@ class Channel
         bool           _invite_only;
         bool           _topic_admin_only;
         bool           _room_password_active;
+        time_t         _creation_time;
     public:
         Channel();
         Channel(Server*, std::string, Client*);
@@ -58,5 +60,10 @@ class Channel
         Client *getClient(std::string user);
         bool    isTopicAdmin();
         void    sendChanWelcome(Client *user);
+        std::string getTopic();
+        bool    getPrivate();
+        bool    isInviteOnly();
+        bool    hasUserLimit();
+        time_t          getCreationTime() const;
 };
 #endif
