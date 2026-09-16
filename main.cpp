@@ -19,6 +19,12 @@ int main(int ac, char **av)
         std::cout << "./IRC <port> <password>" << std::endl;
         return 1;
     }
+    std::string port(av[1]);
+    if (port.find_first_not_of("0123456789") != std::string::npos)
+    {
+        std::cout << BRED << "Error: Please enter a valid port" << RESET << std::endl;
+        return 0;
+    }
     int _port = std::atoi(av[1]);
     int server_fd = create_server_socket(_port); // creer la socket serveur
     if (server_fd < 0)

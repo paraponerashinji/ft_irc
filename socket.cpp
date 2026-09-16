@@ -7,8 +7,12 @@
 #include <fcntl.h>
 #include <cstring>
 
-int create_server_socket(int port) {
-
+int create_server_socket(int port)
+{
+    if (port < 1024 || port > 65535) {
+        std::cout << BRED << "Error: Invalid port (" << port << "). Please use on between 1024 and 65535." << RESET << std::endl;
+        return -1;
+    }
     int server_fd = socket(AF_INET, SOCK_STREAM, 0); // creer la socket serveur (le FD reseau)
     if (server_fd < 0) {
         std::cerr << "socket a echoue" << std::endl;
@@ -34,10 +38,10 @@ int create_server_socket(int port) {
 
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = htonl(INADDR_ANY);
-    address.sin_port = htons(port);         // Port converti en Big Endian
+    address.sin_port = htons(static_cast<uint16_t>(port));         // Port converti en Big Endian
 
     if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) { // associe la socket au port
-        std::cerr << "bind() failed" << std::endl;
+        std::cerr << BRED << "Error: bind() failed" << RESET << std::endl;
         close(server_fd);
         return -1;
     }

@@ -15,6 +15,8 @@ Server::Server() {
     _commandMap["INVITE"] = &Server::invite;
     _commandMap["TOPIC"] = &Server::topic;
     _commandMap["MODE"] = &Server::mode;
+    _commandMap["SHUTDOWN"] = &Server::shutdown;
+    _up = true;
 }
 
 Server::Server(std::string password, int server_fd) : _password(password), _serverFd(server_fd) {
@@ -29,12 +31,18 @@ Server::Server(std::string password, int server_fd) : _password(password), _serv
     _commandMap["INVITE"] = &Server::invite;
     _commandMap["TOPIC"] = &Server::topic;
     _commandMap["MODE"] = &Server::mode;
+    _commandMap["SHUTDOWN"] = &Server::shutdown;
+    _up = true;
 }
 
 Server::~Server() {
     for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
         if ((*it)->getFd() >= 0)
             close((*it)->getFd());
+        delete *it;
+    }
+    for (std::vector<Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it) {
+        delete *it;
     }
     _clients.clear();
     _channels.clear();

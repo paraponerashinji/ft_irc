@@ -105,10 +105,10 @@ void    Server::join(Client *sender, const std::vector<std::string>& params)
         {
             if (e.errorCode() == 403)
             {
-                if (keys.empty() || keys[j].empty())
+                if (keys.empty() || keys[y].empty())
                     createChannel(channels[j], sender);
                 else
-                    createChannel(channels[j], sender, keys[j]);
+                    createChannel(channels[j], sender, keys[y]);
                 continue;
             }
             else

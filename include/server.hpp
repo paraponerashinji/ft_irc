@@ -87,6 +87,7 @@ class   Server {
     std::string             _password;
     int                     _serverFd;
     int                     _port;
+    bool                    _up;
     
     typedef void (Server::*CommandHandler)(Client* client, const std::vector<std::string>& params);
     std::map<std::string, CommandHandler> _commandMap;
@@ -134,6 +135,7 @@ class   Server {
     void    invite(Client *sender, const std::vector<std::string>& params);
     void    topic(Client *sender, const std::vector<std::string>& params);
     void    mode(Client *sender, const std::vector<std::string>& params);
+    void    shutdown(Client *sender, const std::vector<std::string>& params);
     bool    isValidNickname(const std::string& nick);
     void    broadcastToCommonChannels(Client* client, const std::string& message);
     std::vector<std::string> parseCommand(std::string line);

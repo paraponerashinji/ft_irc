@@ -64,7 +64,7 @@ void    Server::run_server_loop()
     server_pollfd.revents = 0;
     fds.push_back(server_pollfd);
     std::cout << BGREEN << "Server Up ! Listening to port " << _port << RESET << std::endl;
-    while (1)
+    while (_up)
     {
         int ret = poll(&fds[0], fds.size(), -1);
         if (ret < 0)
@@ -126,7 +126,6 @@ void    Server::run_server_loop()
                     {
                         std::vector<std::string> params;
                         Quit(&getClientRef(fds[i].fd), params);
-                        fds.erase(fds.begin() + i);
                         continue;
                     }
                     Client *client_ptr = getClientPtr(fds[i].fd);
@@ -146,6 +145,8 @@ void    Server::run_server_loop()
                         client_ptr->setBuffer(remaining);
                         std::cout << BBLUE << "[Client " << client_ptr->getFd() << "] :" << line << RESET << std::endl; 
                         executeCommand(client_ptr, line);
+                        if (getClientPtr(fds[i].fd) == NULL)
+                            break;
                     }
                 }
             }

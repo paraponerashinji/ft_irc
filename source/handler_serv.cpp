@@ -159,12 +159,32 @@ void Server::Quit(Client* client, const std::vector<std::string>& params) {
     for (size_t i = 0; i < clientChanNames.size(); ++i) {
         Channel* chan = getChannel(clientChanNames[i]);
         if (chan) {
-            _channels[i]->quit(client);
+            chan->quit(client);
         }
     }
     close(client->getFd());
+    for (size_t i = 0; i < fds.size(); i++)
+    {
+        if (fds[i].fd == client->getFd())
+        {
+            fds.erase(fds.begin() + i);
+            break;
+        }
+    }
     removeClient(client->getFd());
 };
+
+void Server::shutdown(Client* client, const std::vector<std::string>& params) {
+    (void)params;
+    std::cout << BRED << "Shutting down server requested by " << client->getNickname() << RESET << std::endl;
+    std::string shutdown_msg = ":" + client->getServerIp() + " ERROR :Server shutting down...\r\n";
+    for (size_t i = 0; i < _clients.size(); ++i) {
+        if (_clients[i]) {
+            send(_clients[i]->getFd(), shutdown_msg.c_str(), shutdown_msg.length(), 0);
+        }
+    }
+    this->_up = false; 
+}
 
 /*void Server::cleanDisconnectedClients() {
     for (size_t i = 0; i < _clients.size(); ++i) {
