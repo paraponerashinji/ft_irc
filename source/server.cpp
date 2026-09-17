@@ -15,7 +15,7 @@ Server::Server() {
     _commandMap["INVITE"] = &Server::invite;
     _commandMap["TOPIC"] = &Server::topic;
     _commandMap["MODE"] = &Server::mode;
-    _commandMap["SHUTDOWN"] = &Server::shutdown;
+    //_commandMap["SHUTDOWN"] = &Server::shutdown;
     _up = true;
 }
 
@@ -31,7 +31,7 @@ Server::Server(std::string password, int server_fd) : _password(password), _serv
     _commandMap["INVITE"] = &Server::invite;
     _commandMap["TOPIC"] = &Server::topic;
     _commandMap["MODE"] = &Server::mode;
-    _commandMap["SHUTDOWN"] = &Server::shutdown;
+    //_commandMap["SHUTDOWN"] = &Server::shutdown;
     _up = true;
 }
 

@@ -174,7 +174,7 @@ void Server::Quit(Client* client, const std::vector<std::string>& params) {
     removeClient(client->getFd());
 };
 
-void Server::shutdown(Client* client, const std::vector<std::string>& params) {
+/*void Server::shutdown(Client* client, const std::vector<std::string>& params) {
     (void)params;
     std::cout << BRED << "Shutting down server requested by " << client->getNickname() << RESET << std::endl;
     std::string shutdown_msg = ":" + client->getServerIp() + " ERROR :Server shutting down...\r\n";
@@ -184,7 +184,7 @@ void Server::shutdown(Client* client, const std::vector<std::string>& params) {
         }
     }
     this->_up = false; 
-}
+}*/
 
 /*void Server::cleanDisconnectedClients() {
     for (size_t i = 0; i < _clients.size(); ++i) {

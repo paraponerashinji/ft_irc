@@ -63,6 +63,12 @@ void    Server::run_server_loop()
     server_pollfd.events = POLLIN;
     server_pollfd.revents = 0;
     fds.push_back(server_pollfd);
+
+    struct pollfd stdin_pfd;
+    stdin_pfd.fd = STDIN_FILENO;
+    stdin_pfd.events = POLLIN;
+    fds.push_back(stdin_pfd);
+
     std::cout << BGREEN << "Server Up ! Listening to port " << _port << RESET << std::endl;
     while (_up)
     {
@@ -78,6 +84,16 @@ void    Server::run_server_loop()
         {
             if (fds[i].revents & POLLIN)
             {
+                if (fds[i].fd == STDIN_FILENO) {
+                    std::string input;
+                    if (std::getline(std::cin, input)) {
+                        if (input == "shutdown") {
+                            std::cout << "Shutting down server..." << std::endl;
+                            _up = false;
+                            break;
+                        }
+                    }
+                }
                 if (i == 0)
                 {
                     struct sockaddr_in client_addr;
@@ -126,6 +142,7 @@ void    Server::run_server_loop()
                     {
                         std::vector<std::string> params;
                         Quit(&getClientRef(fds[i].fd), params);
+                        i--;
                         continue;
                     }
                     Client *client_ptr = getClientPtr(fds[i].fd);
@@ -135,18 +152,27 @@ void    Server::run_server_loop()
                         continue;
                     }
                     client_ptr->appendToBuffer(std::string(buffer, n));
-                    while (!client_ptr->getBuffer().empty())
+                    int current_fd = fds[i].fd;
+                    
+                    while (true)
+                    //while (getClientPtr(fds[i].fd) != NULL && !client_ptr->getBuffer().empty())
                     {
-                        if (client_ptr->getBuffer().find("\r\n") == std::string::npos)
+                        Client *current_client = getClientPtr(current_fd);
+
+                        if (current_client == NULL || current_client->getBuffer().empty())
                             break;
-                        size_t pos = client_ptr->getBuffer().find("\r\n");
-                        std::string line = client_ptr->getBuffer().substr(0, pos);
-                        std::string remaining = client_ptr->getBuffer().substr(pos + 2);
-                        client_ptr->setBuffer(remaining);
-                        std::cout << BBLUE << "[Client " << client_ptr->getFd() << "] :" << line << RESET << std::endl; 
-                        executeCommand(client_ptr, line);
-                        if (getClientPtr(fds[i].fd) == NULL)
+                        if (current_client->getBuffer().find("\r\n") == std::string::npos)
                             break;
+                        size_t pos = current_client->getBuffer().find("\r\n");
+                        std::string line = current_client->getBuffer().substr(0, pos);
+                        std::string remaining = current_client->getBuffer().substr(pos + 2);
+                        current_client->setBuffer(remaining);
+                        std::cout << BBLUE << "[Client " << current_client->getFd() << "] :" << line << RESET << std::endl; 
+                        executeCommand(current_client, line);
+                        if (getClientPtr(current_fd) == NULL) {
+                            i--;
+                            break;
+                        }
                     }
                 }
             }
