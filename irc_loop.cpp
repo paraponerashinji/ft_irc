@@ -123,15 +123,18 @@ void    Server::run_server_loop()
                         close(client_fd);
                         continue;
                     }
+                    if (client_fd != -1)
+                    {
                     Client *new_client = new Client(this, client_fd);
-                    new_client->setHostname(ip);
-                    new_client->setServerIp(server_ip);
-                    struct pollfd client_pollfd;
-                    client_pollfd.fd = client_fd;
-                    client_pollfd.events = POLLIN;
-                    client_pollfd.revents = 0;
-                    _clients.push_back(new_client);
-                    fds.push_back(client_pollfd);
+                        new_client->setHostname(ip);
+                        new_client->setServerIp(server_ip);
+                        _clients.push_back(new_client);
+                        struct pollfd client_pollfd;
+                        client_pollfd.fd = client_fd;
+                        client_pollfd.events = POLLIN;
+                        client_pollfd.revents = 0;
+                        fds.push_back(client_pollfd);
+                    }
                 }
                 else
                 {
@@ -140,6 +143,9 @@ void    Server::run_server_loop()
                     ssize_t n = recv(fds[i].fd, buffer, sizeof(buffer) - 1, 0);
                     if (n <= 0)
                     {
+                        if (fds[i].fd <= 0)
+                            continue;
+                        std::cout << fds[i].fd << std::endl;
                         std::vector<std::string> params;
                         Quit(&getClientRef(fds[i].fd), params);
                         i--;
