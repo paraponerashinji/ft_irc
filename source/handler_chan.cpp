@@ -100,6 +100,7 @@ void    Server::join(Client *sender, const std::vector<std::string>& params)
             std::ostringstream output;
             output << "JOIN " << channel->getName();
             channel->broadcast(sender, output.str());
+            sender->sendMessage(sender, output.str());
         }
         catch (IrcException &e)
         {
@@ -109,6 +110,9 @@ void    Server::join(Client *sender, const std::vector<std::string>& params)
                     createChannel(channels[j], sender);
                 else
                     createChannel(channels[j], sender, keys[y]);
+                std::ostringstream output;
+                output << "JOIN " << channels[j];
+                sender->sendMessage(sender, output.str());
                 continue;
             }
             else

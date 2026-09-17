@@ -43,6 +43,7 @@ Channel::Channel(Server *server, std::string name, Client *client): _server(serv
     std::vector<std::string> channels = client->getChannels();
     for (size_t i = 0; i < channels.size(); i++)
         std::cout << channels[i] << std::endl;
+    sendChanWelcome(client);
 };
 
 Channel::Channel(Server *server, std::string name, std::string password, Client *client): _server(server), _name(name), _creation_time(time(NULL))
@@ -71,6 +72,7 @@ Channel::Channel(Server *server, std::string name, std::string password, Client 
     std::vector<std::string> channels = client->getChannels();
     for (size_t i = 0; i < channels.size(); i++)
         std::cout << channels[i] << std::endl;
+    sendChanWelcome(client);
 };
 
 Channel::~Channel()

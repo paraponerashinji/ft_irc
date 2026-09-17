@@ -9,7 +9,7 @@ SRCS = socket.cpp \
 	   irc_loop.cpp 
 
 OBJS = $(SRCS:.cpp=.o)
-NAME = IRC
+NAME = ircserv
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -Iinclude
 RM = rm -f
